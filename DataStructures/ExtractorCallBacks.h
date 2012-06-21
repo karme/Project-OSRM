@@ -192,7 +192,7 @@ public:
         }
 
         //Is the highway tag listed as usable way?
-        if(("track" == highway && ("yes" == access || "yes" == accessTag)) || ("track" != highway && (0 < settings[highway] || "yes" == accessTag || "designated" == accessTag) )) {
+        if (0 < settings[highway] || "yes" == accessTag || "designated" == accessTag) {
             if(!w.isDurationSet) {
                 if(0 < settings[highway]) {
                     if(0 < maxspeed)
@@ -217,7 +217,7 @@ public:
             //Okay, do we have access to that way?
             if(0 < access.size()) { //fastest way to check for non-empty string
                 //If access is forbidden, we don't want to route there.
-                if(access == "no" || access == "agricultural" || access == "forestry" || access == "delivery") { //Todo: this is still hard coded
+	      if(access == "no") {
                     w.access = false;
                 }
                 if(settings.accessRestrictionKeys.find(access) != settings.accessRestrictionKeys.end()) {
