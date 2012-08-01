@@ -1,0 +1,15 @@
+#!/bin/bash -xe
+for i in format-json.scm \
+    geod.scm \
+    geodwrapper.cpp \
+    geodwrapper.h \
+    google-directions.scm \
+    google-polyline.scm \
+    Makefile.geod \
+    partial-route.scm \
+    routing.scm \
+    runtime-compile.scm \
+    debug.scm; do
+cp -vuf ../../routing/svn/routingEngine/$i .
+chmod -w $i
+done

@@ -1,0 +1,15 @@
+#!/bin/sh
+#| -*- mode: scheme; coding: utf-8; -*-
+PATH="/usr/bin:/bin"
+export PATH
+cd /usr/local/lib/osrm/apiwrapper
+exec gosh -I. -- $0 "$@"
+|#
+
+(use osrm-wrapper)
+
+(define (config)
+  '())
+
+(define (main args)
+  (apply wrap-osrm-main (cons config args)))
