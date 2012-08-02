@@ -82,7 +82,7 @@
                 `(result
                   (itdRouteList
                    (itdRoute
-                    ,(wrap-osrm-route-2 (group-pairwise (google-directions-query->track query)))))))))))
+                    ,(wrap-osrm-route-2 service (group-pairwise (google-directions-query->track query)))))))))))
 
 ;; simple test
 ;; (wrap-osrm-route-2 '((8.983340995511963 . 48.52608311031189) (9.15725614289749 . 48.52975538424495)))
