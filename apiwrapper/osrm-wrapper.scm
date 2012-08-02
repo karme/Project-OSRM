@@ -43,8 +43,8 @@
        (geod-add-measure 'wgs84
                          (map (cut permute-to <list> <> '(1 0)) pl))))
 
-(define (wrap-osrm-route-2 points)
-  (let1 r (osrm-route points '())
+(define (wrap-osrm-route-2 service points)
+  (let1 r (osrm-route points '() service)
     ;; todo: catch other errors!
     (when (and (= (assoc-ref r "status") 207)
                (equal? "Cannot find route between points" (assoc-ref r "status_message")))
@@ -68,7 +68,7 @@
               (list)
               l))
 
-(define (wrap-osrm-route params)
+(define (wrap-osrm-route service params)
   (let ((jscallback (cgi-get-parameter "callback" params :default ""))
         (jsfilter (cgi-get-parameter "jsfilter" params :list #t :default '()))
         (jsgeom (cgi-get-parameter "jsgeom" params))
@@ -88,11 +88,12 @@
 ;; (wrap-osrm-route-2 '((8.983340995511963 . 48.52608311031189) (9.15725614289749 . 48.52975538424495)))
 ;; (wrap-osrm-route '(("q" "from:48.52608311031189,8.983340995511963to:48.52975538424495,9.15725614289749") ("format" "js")))
 
-(define (create-context . args)
-  (alist->hash-table '()))
+(define (create-context al)
+  (alist->hash-table al))
 
 (define (cgi-wrap-osrm context params)
-  (wrap-osrm-route params))
+  (wrap-osrm-route (ref context 'osrm-service '("localhost:5000" "/viaroute"))
+		   params))
 
 (define (wrap-osrm-main config . args)
   #?=(list "started")
