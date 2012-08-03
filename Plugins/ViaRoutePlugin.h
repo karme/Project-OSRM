@@ -127,7 +127,7 @@ public:
             segmentPhantomNodes.targetPhantom = phantomNodeVector[i+1];
             rawRoute.segmentEndCoordinates.push_back(segmentPhantomNodes);
         }
-        if(1 == rawRoute.segmentEndCoordinates.size()) {
+        if(false && (1 == rawRoute.segmentEndCoordinates.size())) {
 //            INFO("Checking for alternative paths");
             searchEngine->alternativePaths(rawRoute.segmentEndCoordinates[0],  rawRoute);
 
