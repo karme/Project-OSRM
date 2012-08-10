@@ -60,7 +60,8 @@
           (params (append params
                           (points->parameters points)
                           '((instructions false)
-                            (no cmp)))))
+                            (no cmp)
+                            (alt false)))))
       (receive (status headers body)
           ;; note: osrm doesn't support post?!
           (http-get server
