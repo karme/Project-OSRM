@@ -68,7 +68,7 @@
                     (format #f
                             (string-append request-uri "?~a")
                             (parameters->string params)))
-        (parse-json-string (tee "/tmp/osrm" body)))))) ;; todo: remove tee again!
+        (parse-json-string body)))))
 
 ;; todo: nearly identical to osrm-route
 (define (osrm-pick point . args)
