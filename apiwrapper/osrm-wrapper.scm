@@ -55,7 +55,7 @@
                 (fake-4d geom))
               (s->min (assoc-ref (assoc-ref r "route_summary") "total_time")))
       ;; compare osm distance vs our distance
-      #?=(list (assoc-ref (assoc-ref r "route_summary") "total_distance") (partial-route-length pr))
+      ;; #?=(list (assoc-ref (assoc-ref r "route_summary") "total_distance") (partial-route-length pr))
       pr)))
 
 ;; todo: also in
