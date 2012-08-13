@@ -114,7 +114,13 @@ case "$1" in
 	esac
 	;;
   status)
-	status_of_proc "$DAEMON" "$NAME" && exit 0 || exit $?
+	if get_daemon_status; then
+	    log_success_msg "$DESC is running"
+	    return 0
+	else
+	    log_failure_msg "$DESC is not running"
+	    return 1
+	fi
 	;;
   #reload|force-reload)
 	#
