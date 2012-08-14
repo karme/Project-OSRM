@@ -349,7 +349,6 @@ int main (int argc, char *argv[]) {
         }
 
         cout << "ok, after " << get_timestamp() - time << "s" << endl;
-        time = get_timestamp();
 
         cout << "[extractor] setting number of nodes   ... " << flush;
         ios::pos_type positionInFile = fout.tellp();
@@ -417,7 +416,7 @@ int main (int argc, char *argv[]) {
                     double distance = ApproximateDistance(edgeIT->startCoord.lat, edgeIT->startCoord.lon, nodesIT->lat, nodesIT->lon);
                     assert(edgeIT->speed != -1);
                     double weight = ( distance * 10. ) / (edgeIT->speed / 3.6);
-                    int intWeight = std::max(1, (int)(edgeIT->isDurationSet ? edgeIT->speed : weight) );
+                    int intWeight = std::max(1, (int)std::floor((edgeIT->isDurationSet ? edgeIT->speed : weight)+.5) );
                     int intDist = std::max(1, (int)distance);
                     short zero = 0;
                     short one = 1;
@@ -457,9 +456,8 @@ int main (int argc, char *argv[]) {
             }
         }
         cout << "ok, after " << get_timestamp() - time << "s" << endl;
-        time = get_timestamp();
-
         cout << "[extractor] setting number of edges   ... " << flush;
+
         fout.seekp(positionInFile);
         fout.write((char*)&usedEdgeCounter, sizeof(unsigned));
         fout.close();

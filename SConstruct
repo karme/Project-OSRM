@@ -58,6 +58,10 @@ AddOption('--buildconfiguration', dest='buildconfiguration', type='string', narg
 AddOption('--no-march', dest='nomarch', type='string', nargs=0, action='store', metavar='STRING', help='turn off -march optimization in release mode')
 
 env = Environment( ENV = {'PATH' : os.environ['PATH']} ,COMPILER = GetOption('cxx'))
+env["CC"] = os.getenv("CC") or env["CC"]
+env["CXX"] = os.getenv("CXX") or env["CXX"]
+env["ENV"].update(x for x in os.environ.items() if x[0].startswith("CCC_"))
+
 conf = Configure(env, custom_tests = { 'CheckBoost' : CheckBoost, 'CheckProtobuf' : CheckProtobuf })
 
 if GetOption('cxx') is None:
@@ -70,7 +74,7 @@ else:
 if GetOption('buildconfiguration') == 'debug':
 	env.Append(CCFLAGS = ['-Wall', '-g3', '-rdynamic'])
 else:
-	env.Append(CCFLAGS = ['-O3', '-DNDEBUG'])
+	env.Append(CCFLAGS = ['-O3', '-DNDEBUG', '-minline-all-stringops'])
 
 if sys.platform == 'darwin':	#Mac OS X
 	#os x default installations
@@ -86,6 +90,7 @@ if sys.platform == 'darwin':	#Mac OS X
 	boost_prefix = subprocess.check_output(["brew", "--prefix", "boost"]).strip()
 	env.Append(CPPPATH = [boost_prefix+"/include"] )
 	env.Append(LIBPATH = [boost_prefix+"/lib"] )	
+	env.ParseConfig('pkg-config --cflags --libs libzip')
 elif sys.platform.startswith("freebsd"):
 	env.ParseConfig('pkg-config --cflags --libs protobuf')
 	env.Append(CPPPATH = ['/usr/local/include', '/usr/local/include/libxml2'])
@@ -120,6 +125,10 @@ if not conf.CheckHeader('omp.h'):
 if not conf.CheckLibWithHeader('bz2', 'bzlib.h', 'CXX'):
 	print "bz2 library not found. Exiting"
 	Exit(-1)
+if not conf.CheckLibWithHeader('osmpbf', 'osmpbf/osmpbf.h', 'CXX'):
+	print "osmpbf library not found. Exiting"
+	print "Either install libosmpbf-dev (Ubuntu) or use https://github.com/scrosby/OSM-binary"
+	Exit(-1)
 if not conf.CheckLibWithHeader('png', 'png.h', 'CXX'):
 	print "png library not found. Exiting"
 	Exit(-1)
@@ -146,8 +155,8 @@ if not conf.CheckLibWithHeader('z', 'zlib.h', 'CXX'):
 	print "zlib library or header not found. Exiting"
 	Exit(-1)
 #Check BOOST installation
-if not (conf.CheckBoost('1.41')):
-	print 'Boost version >= 1.41 needed'
+if not (conf.CheckBoost('1.44')):
+	print 'Boost version >= 1.44 needed'
 	Exit(-1);
 if not conf.CheckLibWithHeader('boost_thread', 'boost/thread.hpp', 'CXX'):
 	if not conf.CheckLibWithHeader('boost_thread-mt', 'boost/thread.hpp', 'CXX'):
@@ -173,6 +182,14 @@ if not conf.CheckLib('boost_system', language="C++"):
 		print "using boost -mt"
 		env.Append(CCFLAGS = ' -lboost_system-mt')
 		env.Append(LINKFLAGS = ' -lboost_system-mt')
+if not conf.CheckLib('boost_filesystem', language="C++"):
+	if not conf.CheckLib('boost_filesystem-mt', language="C++"):
+		print "boost_filesystem library not found. Exiting"
+		Exit(-1)
+	else:
+		print "using boost -mt"
+		env.Append(CCFLAGS = ' -lboost_filesystem-mt')
+		env.Append(LINKFLAGS = ' -lboost_filesystem-mt')
 if not conf.CheckCXXHeader('boost/archive/iterators/base64_from_binary.hpp'):
 	print "boost/archive/iterators/base64_from_binary.hpp not found. Exiting"
 	Exit(-1)
@@ -245,19 +262,13 @@ if not conf.CheckCXXHeader('boost/unordered_map.hpp'):
 #	print "tbb/task_scheduler_init.h not found. Exiting"
 #	Exit(-1)
 
-
-protobld = Builder(action = 'protoc -I=DataStructures/pbf-proto --cpp_out=DataStructures/pbf-proto $SOURCE')
-env.Append(BUILDERS = {'Protobuf' : protobld})
-osm1 = env.Protobuf('DataStructures/pbf-proto/fileformat.proto')
-osm2 = env.Protobuf('DataStructures/pbf-proto/osmformat.proto')
-
 #Hack to make OSRM compile on the default OS X Compiler.
 if sys.platform != 'darwin':
 	env.Append(CCFLAGS = ['-fopenmp'])
 	env.Append(LINKFLAGS = ['-fopenmp'])
 
-env.Program(target = 'osrm-extract', source = ["extractor.cpp", Glob('DataStructures/pbf-proto/*.pb.cc'), Glob('Util/*.cpp')], depends=['osm1', 'osm2'])
-env.Program(target = 'osrm-prepare', source = ["createHierarchy.cpp", 'Contractor/EdgeBasedGraphFactory.cpp', Glob('Util/SRTMLookup/*.cpp'), Glob('Algorithms/*.cpp')])
+env.Program(target = 'osrm-extract', source = ["extractor.cpp", Glob('Util/*.cpp')])
+env.Program(target = 'osrm-prepare', source = ["createHierarchy.cpp", Glob('Contractor/*.cpp'), Glob('Util/SRTMLookup/*.cpp'), Glob('Algorithms/*.cpp')])
 env.Program(target = 'osrm-routed', source = ["routed.cpp", 'Descriptors/DescriptionFactory.cpp', Glob('ThirdParty/*.cc'), Glob('Server/DataStructures/*.cpp')], CCFLAGS = env['CCFLAGS'] + ['-DROUTED'])
 env = conf.Finish()
 

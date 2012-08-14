@@ -79,13 +79,16 @@ public:
             return;
         }
 
+        unsigned zoomLevel = 18;
+        if(routeParameters.options.Find("z") != ""){
+            zoomLevel = atoi(routeParameters.options.Find("z").c_str());
+            if(18 < zoomLevel)
+                zoomLevel = 18;
+        }
+
         RawRouteData rawRoute;
         rawRoute.checkSum = nodeHelpDesk->GetCheckSum();
         bool checksumOK = ((unsigned)atoi(routeParameters.options.Find("checksum").c_str()) == rawRoute.checkSum);
-//        if(!checksumOK) {
-//            INFO((unsigned)atoi(routeParameters.options.Find("checksum").c_str()) << "!=" << rawRoute.checkSum);
-//            INFO("mismatching checksum");
-//        }
         std::vector<std::string> textCoord;
         for(unsigned i = 0; i < routeParameters.viaPoints.size(); ++i) {
             textCoord.resize(0);
@@ -114,27 +117,41 @@ public:
                 }
             }
 //            INFO("Brute force lookup of coordinate " << i);
-            searchEngine->FindPhantomNodeForCoordinate( rawRoute.rawViaNodeCoordinates[i], phantomNodeVector[i]);
+            searchEngine->FindPhantomNodeForCoordinate( rawRoute.rawViaNodeCoordinates[i], phantomNodeVector[i], zoomLevel);
         }
-        unsigned distance = 0;
-        //single route or via point routing
-        if(2 == rawRoute.rawViaNodeCoordinates.size()) {
+        //unsigned distance = 0;
+
+        for(unsigned i = 0; i < phantomNodeVector.size()-1; ++i) {
             PhantomNodes segmentPhantomNodes;
-            segmentPhantomNodes.startPhantom = phantomNodeVector[0];
-            segmentPhantomNodes.targetPhantom = phantomNodeVector[1];
-            distance = searchEngine->ComputeRoute(segmentPhantomNodes, rawRoute.computedRouted);
+            segmentPhantomNodes.startPhantom = phantomNodeVector[i];
+            segmentPhantomNodes.targetPhantom = phantomNodeVector[i+1];
             rawRoute.segmentEndCoordinates.push_back(segmentPhantomNodes);
-        } else {
-            //Getting the shortest via path is a dynamic programming problem and is solved as such.
-            for(unsigned i = 0; i < phantomNodeVector.size()-1; ++i) {
-                 PhantomNodes segmentPhantomNodes;
-                 segmentPhantomNodes.startPhantom = phantomNodeVector[i];
-                 segmentPhantomNodes.targetPhantom = phantomNodeVector[i+1];
-                 rawRoute.segmentEndCoordinates.push_back(segmentPhantomNodes);
-            }
-            distance = searchEngine->ComputeViaRoute(rawRoute.segmentEndCoordinates, rawRoute.computedRouted);
         }
-        if(INT_MAX == distance ) {
+        if(1 == rawRoute.segmentEndCoordinates.size()) {
+//            INFO("Checking for alternative paths");
+            searchEngine->alternativePaths(rawRoute.segmentEndCoordinates[0],  rawRoute);
+
+        } else {
+            searchEngine->shortestPath(rawRoute.segmentEndCoordinates, rawRoute);
+        }
+//        std::cout << "latitude,longitude" << std::endl;
+//        for(unsigned i = 0; i < rawRoute.computedShortestPath.size(); ++i) {
+//            _Coordinate current;
+//            searchEngine->GetCoordinatesForNodeID(rawRoute.computedShortestPath[i].node, current);
+//            std::cout << current.lat/100000. << "," << current.lon/100000. << std::endl;
+//        }
+//        std::cout << std::endl;
+//
+//        std::cout << "latitude,longitude" << std::endl;
+//        for(unsigned i = 0; i < rawRoute.computedAlternativePath.size(); ++i) {
+//            _Coordinate current;
+//            searchEngine->GetCoordinatesForNodeID(rawRoute.computedAlternativePath[i].node, current);
+//            std::cout << current.lat/100000. << "," << current.lon/100000. << std::endl;
+//        }
+//        std::cout << std::endl;
+
+
+        if(INT_MAX == rawRoute.lengthOfShortestPath ) {
             DEBUG( "Error occurred, single path not found" );
         }
         reply.status = http::Reply::ok;
@@ -149,13 +166,7 @@ public:
 
         _DescriptorConfig descriptorConfig;
         unsigned descriptorType = descriptorTable[routeParameters.options.Find("output")];
-        unsigned short zoom = 18;
-        if(routeParameters.options.Find("z") != ""){
-            zoom = atoi(routeParameters.options.Find("z").c_str());
-            if(18 < zoom)
-                zoom = 18;
-        }
-        descriptorConfig.z = zoom;
+        descriptorConfig.z = zoomLevel;
         if(routeParameters.options.Find("instructions") == "false") {
             descriptorConfig.instructions = false;
         }
@@ -188,7 +199,7 @@ public:
 //        INFO("Number of segments: " << rawRoute.segmentEndCoordinates.size());
         desc->SetConfig(descriptorConfig);
 
-        desc->Run(reply, rawRoute, phantomNodes, *searchEngine, distance);
+        desc->Run(reply, rawRoute, phantomNodes, *searchEngine);
         if("" != JSONParameter) {
             reply.content += ")\n";
         }
