@@ -53,7 +53,9 @@
     (let1 pr (make-partial-route
               (let1 geom (assoc-ref r "route_geometry")
                 (assert (not (string? geom)))
-                (upsample-polyline->4d (ref context 'elpro '("localhost" "/cgi-bin/elpro.fcgi")) geom 50))
+                (upsample-polyline->4d (ref context 'elpro '("localhost" "/cgi-bin/elpro.fcgi"))
+                                       (map (cut permute-to <list> <> '(1 0)) geom)
+                                       50))
               (s->min (assoc-ref (assoc-ref r "route_summary") "total_time")))
       ;; compare osm distance vs our distance
       ;; #?=(list (assoc-ref (assoc-ref r "route_summary") "total_distance") (partial-route-length pr))
