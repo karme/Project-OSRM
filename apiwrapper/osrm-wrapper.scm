@@ -27,6 +27,7 @@
   (use partial-route)
   (use google-directions)
   (use geod)
+  (use elpro-client)
   (use www.fastcgi)
   (use routing)
   (use osrm-client)
@@ -43,8 +44,8 @@
        (geod-add-measure 'wgs84
                          (map (cut permute-to <list> <> '(1 0)) pl))))
 
-(define (wrap-osrm-route-2 service points)
-  (let1 r (osrm-route points '() service)
+(define (wrap-osrm-route-2 context points)
+  (let1 r (osrm-route points '() (ref context 'osrm-service '("localhost:5000" "/viaroute")))
     ;; todo: catch other errors!
     (when (and (= (assoc-ref r "status") 207)
                (equal? "Cannot find route between points" (assoc-ref r "status_message")))
@@ -52,7 +53,7 @@
     (let1 pr (make-partial-route
               (let1 geom (assoc-ref r "route_geometry")
                 (assert (not (string? geom)))
-                (fake-4d geom))
+                (upsample-polyline->4d (ref context 'elpro '("localhost" "/cgi-bin/elpro.fcgi")) geom 50))
               (s->min (assoc-ref (assoc-ref r "route_summary") "total_time")))
       ;; compare osm distance vs our distance
       ;; #?=(list (assoc-ref (assoc-ref r "route_summary") "total_distance") (partial-route-length pr))
@@ -68,7 +69,7 @@
               (list)
               l))
 
-(define (wrap-osrm-route service params)
+(define (wrap-osrm-route context params)
   (let ((jscallback (cgi-get-parameter "callback" params :default ""))
         (jsfilter (cgi-get-parameter "jsfilter" params :list #t :default '()))
         (jsgeom (cgi-get-parameter "jsgeom" params))
@@ -82,7 +83,7 @@
                 `(result
                   (itdRouteList
                    (itdRoute
-                    ,(wrap-osrm-route-2 service (group-pairwise (google-directions-query->track query)))))))))))
+                    ,(wrap-osrm-route-2 context (group-pairwise (google-directions-query->track query)))))))))))
 
 ;; simple test
 ;; (wrap-osrm-route-2 '((8.983340995511963 . 48.52608311031189) (9.15725614289749 . 48.52975538424495)))
@@ -91,16 +92,12 @@
 (define (create-context al)
   (alist->hash-table al))
 
-(define (cgi-wrap-osrm context params)
-  (wrap-osrm-route (ref context 'osrm-service '("localhost:5000" "/viaroute"))
-		   params))
-
 (define (wrap-osrm-main config . args)
   #?=(list "started")
   ;; todo: do this in apache config
   (sys-putenv "PATH" "/usr/local/bin:/usr/bin:/bin")
   (let* ((context (create-context (config)))
-         (handle-request (cut cgi-wrap-osrm context <>)))
+         (handle-request (cut wrap-osrm-route context <>)))
     (with-fastcgi (cut cgi-main handle-request
 		       :on-error (lambda(e) (raise e)) ;; overwrite default error handler and exit
 		       )
