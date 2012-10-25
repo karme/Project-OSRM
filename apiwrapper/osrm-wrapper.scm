@@ -26,7 +26,6 @@
   (use sxml.adaptor) ;; for assert macro
   (use partial-route)
   (use google-directions)
-  (use geod)
   (use elpro-client)
   (use www.fastcgi)
   (use routing)
@@ -37,12 +36,6 @@
 
 (define (s->min x)
   (/. x 60))
-
-(define (fake-4d pl)
-  (map (lambda(x)
-         (list (ref x 0) (ref x 1) 0 (ref x 2)))
-       (geod-add-measure 'wgs84
-                         (map (cut permute-to <list> <> '(1 0)) pl))))
 
 (define (wrap-osrm-route-2 context points)
   (let1 r (osrm-route points '() (ref context 'osrm-service '("localhost:5000" "/viaroute")))
