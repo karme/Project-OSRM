@@ -1,4 +1,8 @@
 -- Begin of globals
+require("curl")
+require("json")
+clib = curl.easy_init() 
+
 barrier_whitelist = { [""] = true, ["bollard"] = true, ["entrance"] = true, ["cattle_grid"] = true, ["border_control"] = true, ["toll_booth"] = true, ["sally_port"] = true, ["gate"] = true}
 access_tag_whitelist = { ["yes"] = true, ["permissive"] = true, ["designated"] = true	}
 access_tag_blacklist = { ["no"] = true, ["private"] = true, ["agricultural"] = true, ["forestery"] = true }
@@ -257,4 +261,80 @@ function way_function (way, numberOfNodesInWay)
 
 	way.type = 1
 	return 1
+end
+
+function map(func, array)
+  local new_array = {}
+  for i,v in ipairs(array) do
+    new_array[i] = func(v)
+  end
+  return new_array
+end
+
+function params(pl,dist)
+  return 'path='..table.concat(map(function(x) return table.concat(x,",") end, pl),"|")..'&upsample='..dist..'&format=sjs'
+end
+
+-- input: 2d polyline
+-- output: upsampled 4d polyline with elevation and wgs84-distance from startpoint as 3rd and 4th dimension added
+function upsample_pl4d(pl,dist)
+   local header = {}
+   local body = {}
+   -- todo: maybe use http post
+   clib:setopt(curl.OPT_URL,'http://localhost/cgi-bin/elpro.fcgi?'..params(pl,dist))
+   clib:setopt(curl.OPT_HEADERFUNCTION,function(s,len) table.insert(header,s) return len,nil end)
+   clib:setopt(curl.OPT_WRITEFUNCTION,function(s,len) table.insert(body,s) return len,nil end)
+   clib:perform()
+   local r=json.decode(table.concat(body))
+   assert(r['status']=='OK')
+   return r['results']
+end
+
+function last(t)
+   return t[table.maxn(t)]
+end
+
+-- input: 4d polyline
+-- output: distance/elevation deltas
+function dz(pl)
+   local r={}
+   for i=1,table.maxn(pl)-1 do
+      r[i]={pl[i+1][4]-pl[i][4],pl[i+1][3]-pl[i][3]}
+   end
+   return r
+end
+
+-- simple speed function depending on gradient
+-- input: gradient
+-- output: speed
+function speed(g)
+   if g>0 then
+      return math.max(3,15-100*g)
+   else
+      return math.min(50,15-50*g)
+   end
+end
+
+-- input: pl
+-- output: average speed
+function avg_speed_and_length(pl)
+   local pl4d=upsample_pl4d(pl,50)
+   local l=last(pl4d)[4]
+   local dzs=dz(pl4d)
+   local speeds=map(speed, map(function(x) return x[2]/x[1] end, dzs))
+   local time=0
+   for i=1,table.maxn(speeds) do
+      time=time+dzs[i][1]/speeds[i]
+   end
+   return {l/time,l}
+end
+
+-- calculate segment weight
+function segment_function(lat1, lon1, lat2, lon2, speed, distance)
+   -- todo: what about input speed?!
+   local r=avg_speed_and_length({{lat1/1e5,lon1/1e5},{lat2/1e5,lon2/1e5}})
+   local as=r[1]
+   local length=r[2]
+   -- todo: compare length to distance
+   return length*10/(as/3.6)
 end
