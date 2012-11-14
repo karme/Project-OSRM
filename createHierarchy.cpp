@@ -126,6 +126,11 @@ int main (int argc, char *argv[]) {
 
     // Create a new lua state
     lua_State *myLuaState = luaL_newstate();
+#if LUA_VERSION_NUM >= 501 
+	luaL_openlibs(myLuaState);
+#else
+	lua_baselibopen(myLuaState);
+#endif
 
     // Connect LuaBind to this lua state
     luabind::open(myLuaState);

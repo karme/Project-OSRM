@@ -80,6 +80,11 @@ int main (int argc, char *argv[]) {
 
     // Create a new lua state
     lua_State *myLuaState = luaL_newstate();
+#if LUA_VERSION_NUM >= 501 
+	luaL_openlibs(myLuaState);
+#else
+	lua_baselibopen(myLuaState);
+#endif
 
     // Connect LuaBind to this lua state
     luabind::open(myLuaState);
@@ -173,7 +178,7 @@ int main (int argc, char *argv[]) {
         INFO("Parser not initialized!");
     parser->Parse();
 
-    externalMemory.PrepareData(outputFileName, restrictionsFileName, amountOfRAM);
+    externalMemory.PrepareData(outputFileName, restrictionsFileName, amountOfRAM, myLuaState);
 
     stringMap.clear();
     delete parser;
