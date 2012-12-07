@@ -1,7 +1,12 @@
 -- Begin of globals
-require("curl")
-require("json")
-clib = curl.easy_init() 
+
+if true then
+   require("profiles/elpro-http")
+   upsample_pl4d = get_upsample_pl4d("127.0.0.1",80)
+else
+   require("profiles/elpro-tcp")
+   upsample_pl4d = get_upsample_pl4d("127.0.0.1",10000)
+end
 
 barrier_whitelist = { [""] = true, ["bollard"] = true, ["entrance"] = true, ["cattle_grid"] = true, ["border_control"] = true, ["toll_booth"] = true, ["sally_port"] = true, ["gate"] = true}
 access_tag_whitelist = { ["yes"] = true, ["permissive"] = true, ["designated"] = true	}
@@ -271,25 +276,6 @@ function map(func, array)
   return new_array
 end
 
-function params(pl,dist)
-  return 'path='..table.concat(map(function(x) return table.concat(x,",") end, pl),"|")..'&upsample='..dist..'&format=sjs'
-end
-
--- input: 2d polyline
--- output: upsampled 4d polyline with elevation and wgs84-distance from startpoint as 3rd and 4th dimension added
-function upsample_pl4d(pl,dist)
-   local header = {}
-   local body = {}
-   -- todo: maybe use http post
-   clib:setopt(curl.OPT_URL,'http://localhost/cgi-bin/elpro.fcgi?'..params(pl,dist))
-   clib:setopt(curl.OPT_HEADERFUNCTION,function(s,len) table.insert(header,s) return len,nil end)
-   clib:setopt(curl.OPT_WRITEFUNCTION,function(s,len) table.insert(body,s) return len,nil end)
-   clib:perform()
-   local r=json.decode(table.concat(body))
-   assert(r['status']=='OK')
-   return r['results']
-end
-
 function last(t)
    return t[table.maxn(t)]
 end
@@ -332,9 +318,11 @@ end
 -- calculate segment weight
 function segment_function(lat1, lon1, lat2, lon2, speed, distance)
    -- todo: what about input speed?!
+   --print("segment_function("..table.concat({lat1,lon1,lat2,lon2,speed,distance},",")..")")
    local r=avg_speed_and_length({{lat1/1e5,lon1/1e5},{lat2/1e5,lon2/1e5}})
    local as=r[1]
    local length=r[2]
    -- todo: compare length to distance
+   --print("length="..length.." distance="..distance.." difference="..(1-(distance/length))*100)
    return length*10/(as/3.6)
 end
