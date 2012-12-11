@@ -49,7 +49,17 @@ function get_upsample_pl4d(host, port)
    end
    -- print("ok")
 
+   -- todo
+   function reverse(a)
+      local r={}
+      local n=table.maxn(a)
+      for i=1,n do
+	 r[n-i+1]=a[i]
+      end
+      return r
+   end
+
    return function(pl,dist)
-      return parse_result(remote_eval("(upsample-polyline->4d 'wgs84 '("..table.concat(map(function(x) return "("..table.concat(x," ")..")" end, pl)," ")..") "..dist..")"))
+      return parse_result(remote_eval("(upsample-polyline->4d 'wgs84 '("..table.concat(map(function(x) return "("..table.concat(reverse(x)," ")..")" end, pl)," ")..") "..dist..")"))
    end
 end
