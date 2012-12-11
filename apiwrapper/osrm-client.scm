@@ -60,7 +60,7 @@
           (params (append params
                           (points->parameters points)
                           '((instructions false)
-                            (no cmp)
+                            (compression false)
                             (alt false)))))
       (receive (status headers body)
           ;; note: osrm doesn't support post?!
