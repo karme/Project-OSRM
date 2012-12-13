@@ -301,28 +301,57 @@ function speed(g)
    end
 end
 
--- input: pl
+-- input: 4d pl
 -- output: average speed
-function avg_speed_and_length(pl)
-   local pl4d=upsample_pl4d(pl,50)
-   local l=last(pl4d)[4]
+function avg_speed_and_length_4d(pl4d)
+   local l=0+last(pl4d)[4]
    local dzs=dz(pl4d)
    local speeds=map(speed, map(function(x) return x[2]/x[1] end, dzs))
    local time=0
    for i=1,table.maxn(speeds) do
       time=time+dzs[i][1]/speeds[i]
    end
-   return {l/time,l}
+   return l/time,l
+end
+
+-- input: 4d pl (distance in last dimension)
+-- output: reversed 4d polyline
+function reverse_pl4d(pl)
+   -- todo: there must be something like this?!
+   local function copy(a)
+      local n=table.maxn(a)
+      local r={}
+      for i=1,n do
+	 r[i]=a[i]
+      end
+      return r
+   end
+
+   local n=table.maxn(pl)
+   if n<2 then
+      return pl
+   else
+      local r={}
+      r[1]=copy(pl[n])
+      r[1][4]=0
+      for i=2,n do
+	 r[i]=copy(pl[n-i+1])
+	 r[i][4]=r[i-1][4]+(pl[n-i+1+1][4]-pl[n-i+1+0][4])
+      end
+      -- compensate for float precision
+      r[n][4]=pl[n][4]
+      return r
+   end
 end
 
 -- calculate segment weight
+-- todo: what about input speed?!
 function segment_function(lat1, lon1, lat2, lon2, speed, distance)
-   -- todo: what about input speed?!
-   --print("segment_function("..table.concat({lat1,lon1,lat2,lon2,speed,distance},",")..")")
-   local r=avg_speed_and_length({{lat1/1e5,lon1/1e5},{lat2/1e5,lon2/1e5}})
-   local as=r[1]
-   local length=r[2]
-   -- todo: compare length to distance
-   --print("length="..length.." distance="..distance.." difference="..(1-(distance/length))*100)
-   return length*10/(as/3.6)
+   local plfwd=upsample_pl4d({{lat1/1e5,lon1/1e5},{lat2/1e5,lon2/1e5}},50)
+   local plbwd=reverse_pl4d(plfwd)
+   local asfwd,lengthfwd=avg_speed_and_length_4d(plfwd)
+   local asbwd,lengthbwd=avg_speed_and_length_4d(plbwd)
+   assert(lengthfwd==lengthbwd)
+   local length=lengthfwd
+   return {length*10/(asfwd/3.6), length*10/(asbwd/3.6), length}
 end

@@ -224,28 +224,28 @@ void ExtractionContainers::PrepareData(const std::string & outputFileName, const
                     assert(edgeIT->speed != -1);
 		    
                     double weight[2];
-		    // todo: call only once
-		    // - need multiple return (weight forward, weight backward, distance)
 		    try {
-		      weight[0]=luabind::call_function<double>(myLuaState,
-							       "segment_function",
-							       edgeIT->startCoord.lat, edgeIT->startCoord.lon,
-							       edgeIT->targetCoord.lat, edgeIT->targetCoord.lon,
-							       edgeIT->speed,
-							       distance);
-		      weight[1]=luabind::call_function<double>(myLuaState,
-							       "segment_function",
-							       edgeIT->targetCoord.lat, edgeIT->targetCoord.lon,
-							       edgeIT->startCoord.lat, edgeIT->startCoord.lon,
-							       edgeIT->speed,
-							       distance);
+		      // note: didn't find a way to get multiple return values with luabind
+		      // => using table
+		      luabind::object r = luabind::call_function<luabind::object>
+			(myLuaState,
+			 "segment_function",
+			 edgeIT->startCoord.lat, edgeIT->startCoord.lon,
+			 edgeIT->targetCoord.lat, edgeIT->targetCoord.lon,
+			 edgeIT->speed,
+			 distance);
+		      weight[0]=luabind::object_cast<double>(r[1]);
+		      weight[1]=luabind::object_cast<double>(r[2]);
+		      distance=luabind::object_cast<double>(r[3]);
+		      // INFO("weight[0]=" << weight[0] << " weight[1]=" << weight[1] << " distance=" << distance);
 		    } catch (const luabind::error &er) {
 		      lua_State* Ler=er.state();
 		      std::cerr << "-- " << lua_tostring(Ler, -1) << std::endl;
 		      lua_pop(Ler, 1); // remove error message
 		      ERR(er.what());
-		    }
-		    catch (...) {
+		    } catch (const std::exception &er) {
+		      ERR(er.what());
+		    } catch (...) {
 		      ERR("Unknown error!");
 		    }
 
