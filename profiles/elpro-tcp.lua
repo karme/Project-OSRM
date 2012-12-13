@@ -4,7 +4,7 @@ function get_upsample_pl4d(host, port)
    local client = assert(socket.tcp())
    assert(client:connect(socket.dns.toip(host), port))
 
-   function readline()
+   local function readline()
       local str
       local err
       local part
@@ -12,12 +12,12 @@ function get_upsample_pl4d(host, port)
       return str
    end
 
-   function remote_eval(s)
+   local function remote_eval(s)
       assert(client:send(s))
       return string.sub(readline(),string.len("gosh> ")+1)
    end
 
-   function map(func, array)
+   local function map(func, array)
       local new_array = {}
       for i,v in ipairs(array) do
 	 new_array[i] = func(v)
@@ -25,7 +25,7 @@ function get_upsample_pl4d(host, port)
       return new_array
    end
 
-   function parse_result(s)
+   local function parse_result(s)
       local r={}
       for i in string.gmatch(s, "%([^%)]+%)") do
 	 local p={}
@@ -50,7 +50,7 @@ function get_upsample_pl4d(host, port)
    -- print("ok")
 
    -- todo
-   function reverse(a)
+   local function reverse(a)
       local r={}
       local n=table.maxn(a)
       for i=1,n do

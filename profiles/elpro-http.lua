@@ -4,7 +4,7 @@ require("json")
 function get_upsample_pl4d(host, port)
    local clib = curl.easy_init()
    local url = 'http://'..host..':'..port..'/cgi-bin/elpro.fcgi?'
-   function params(pl,dist)
+   local function params(pl,dist)
       return 'path='..table.concat(map(function(x) return table.concat(x,",") end, pl),"|")..'&upsample='..dist..'&format=sjs'
    end
 
