@@ -52,6 +52,7 @@ struct _Way {
 		keyVals.EraseAll();
         direction = _Way::notSure;
         speed = -1;
+        maxspeed = -1;
         type = -1;
         access = true;
         roundabout = false;
@@ -67,6 +68,7 @@ struct _Way {
     unsigned nameID;
     std::string name;
     double speed;
+    double maxspeed;
     short type;
     bool access;
     bool roundabout;
@@ -86,10 +88,10 @@ struct _Relation {
 };
 
 struct _Edge {
-    _Edge() : start(0), target(0), type(0), direction(0), speed(0), nameID(0), isRoundabout(false), ignoreInGrid(false), isDurationSet(false), isAccessRestricted(false) {};
-    _Edge(NodeID s, NodeID t) : start(s), target(t), type(0), direction(0), speed(0), nameID(0), isRoundabout(false), ignoreInGrid(false), isDurationSet(false), isAccessRestricted(false) { }
-    _Edge(NodeID s, NodeID t, short tp, short d, double sp): start(s), target(t), type(tp), direction(d), speed(sp), nameID(0), isRoundabout(false), ignoreInGrid(false), isDurationSet(false), isAccessRestricted(false) { }
-    _Edge(NodeID s, NodeID t, short tp, short d, double sp, unsigned nid, bool isra, bool iing, bool ids, bool iar): start(s), target(t), type(tp), direction(d), speed(sp), nameID(nid), isRoundabout(isra), ignoreInGrid(iing), isDurationSet(ids), isAccessRestricted(iar) {
+    _Edge() : start(0), target(0), type(0), direction(0), speed(0), maxspeed(0), nameID(0), isRoundabout(false), ignoreInGrid(false), isDurationSet(false), isAccessRestricted(false) {};
+    _Edge(NodeID s, NodeID t) : start(s), target(t), type(0), direction(0), speed(0), maxspeed(0), nameID(0), isRoundabout(false), ignoreInGrid(false), isDurationSet(false), isAccessRestricted(false) { }
+    _Edge(NodeID s, NodeID t, short tp, short d, double sp): start(s), target(t), type(tp), direction(d), speed(sp), maxspeed(0), nameID(0), isRoundabout(false), ignoreInGrid(false), isDurationSet(false), isAccessRestricted(false) { }
+    _Edge(NodeID s, NodeID t, short tp, short d, double sp, double maxsp, unsigned nid, bool isra, bool iing, bool ids, bool iar): start(s), target(t), type(tp), direction(d), speed(sp), maxspeed(maxsp), nameID(nid), isRoundabout(isra), ignoreInGrid(iing), isDurationSet(ids), isAccessRestricted(iar) {
         assert(0 <= type);
     }
     NodeID start;
@@ -97,6 +99,7 @@ struct _Edge {
     short type;
     short direction;
     double speed;
+    double maxspeed;
     unsigned nameID;
     bool isRoundabout;
     bool ignoreInGrid;

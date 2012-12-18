@@ -93,7 +93,7 @@ bool ExtractorCallbacks::wayFunction(_Way &w) {
         }
 
         for(vector< NodeID >::size_type n = 0; n < w.path.size()-1; ++n) {
-            externalMemory->allEdges.push_back(_Edge(w.path[n], w.path[n+1], w.type, w.direction, w.speed, w.nameID, w.roundabout, w.ignoreInGrid, w.isDurationSet, w.isAccessRestricted));
+            externalMemory->allEdges.push_back(_Edge(w.path[n], w.path[n+1], w.type, w.direction, w.speed, w.maxspeed, w.nameID, w.roundabout, w.ignoreInGrid, w.isDurationSet, w.isAccessRestricted));
             externalMemory->usedNodeIDs.push_back(w.path[n]);
         }
         externalMemory->usedNodeIDs.push_back(w.path.back());

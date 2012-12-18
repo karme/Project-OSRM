@@ -232,7 +232,8 @@ void ExtractionContainers::PrepareData(const std::string & outputFileName, const
 			 "segment_function",
 			 edgeIT->startCoord.lat, edgeIT->startCoord.lon,
 			 edgeIT->targetCoord.lat, edgeIT->targetCoord.lon,
-			 edgeIT->speed);
+			 edgeIT->speed,
+			 edgeIT->maxspeed);
 		      weight[0]=luabind::object_cast<double>(r[1]);
 		      weight[1]=luabind::object_cast<double>(r[2]);
 		      distance=luabind::object_cast<double>(r[3]);

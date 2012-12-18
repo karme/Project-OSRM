@@ -210,6 +210,7 @@ function way_function (way, numberOfNodesInWay)
 	-- maxspeed
 	if take_minimum_of_speeds then
 		if maxspeed and maxspeed>0 then
+			way.maxspeed = maxspeed
 			way.speed = math.min(way.speed, maxspeed)
 		end
 	end
@@ -346,15 +347,23 @@ function reverse_pl4d(pl)
 end
 
 -- calculate segment weight
--- todo: way maxspeed must be respected downhill, too
 -- notes:
 -- could be simplified if we stay with the simple gradient based speed function
-function segment_function(lat1, lon1, lat2, lon2, speed)
+function segment_function(lat1, lon1, lat2, lon2, speed, maxspeed)
    local plfwd=upsample_pl4d({{lat1/1e5,lon1/1e5},{lat2/1e5,lon2/1e5}},50)
    local plbwd=reverse_pl4d(plfwd)
    local asfwd,lengthfwd=avg_speed_and_length_4d(plfwd)
    local asbwd,lengthbwd=avg_speed_and_length_4d(plbwd)
    assert(lengthfwd==lengthbwd)
    local length=lengthfwd
-   return {length*10/((speed*asfwd/15)/3.6), length*10/((speed*asbwd/15)/3.6), length}
+	-- if maxspeed>0 and (speed*asfwd/15 > maxspeed or speed*asbwd/15 > maxspeed) then
+	-- 	print("maxspeed reached: "..(speed*asfwd/15).." "..(speed*asbwd/15).." "..maxspeed)
+	-- end
+	if maxspeed>0 then
+		return {length*10/(math.min(speed*asfwd/15,maxspeed)/3.6),
+				  length*10/(math.min(speed*asbwd/15,maxspeed)/3.6),
+				  length}
+	else
+		return {length*10/((speed*asfwd/15)/3.6), length*10/((speed*asbwd/15)/3.6), length}
+	end
 end
