@@ -345,7 +345,7 @@ function reverse_pl4d(pl)
 end
 
 -- calculate segment weight
--- todo: what about input speed?!
+-- todo: way maxspeed must be respected downhill, too
 -- notes:
 -- could be simplified if we stay with the simple gradient based speed function
 function segment_function(lat1, lon1, lat2, lon2, speed)
@@ -355,5 +355,5 @@ function segment_function(lat1, lon1, lat2, lon2, speed)
    local asbwd,lengthbwd=avg_speed_and_length_4d(plbwd)
    assert(lengthfwd==lengthbwd)
    local length=lengthfwd
-   return {length*10/(asfwd/3.6), length*10/(asbwd/3.6), length}
+   return {length*10/((speed*asfwd/15)/3.6), length*10/((speed*asbwd/15)/3.6), length}
 end
