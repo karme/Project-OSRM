@@ -171,6 +171,7 @@ function way_function (way, numberOfNodesInWay)
 		way.direction = Way.bidirectional
 		way.ignore_in_grid = true
 		if durationIsValid(duration) then
+		        -- todo: shouldn't the weight at least be distributed according to segment lenghts?
 			way.speed = math.max( parseDuration(duration) / math.max(1, numberOfNodesInWay-1) )
 		 	way.is_duration_set = true
 		else
