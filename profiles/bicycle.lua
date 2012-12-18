@@ -346,8 +346,9 @@ end
 
 -- calculate segment weight
 -- todo: what about input speed?!
--- note: could be simplified if we stay with the simple gradient based speed function
-function segment_function(lat1, lon1, lat2, lon2, speed, distance)
+-- notes:
+-- could be simplified if we stay with the simple gradient based speed function
+function segment_function(lat1, lon1, lat2, lon2, speed)
    local plfwd=upsample_pl4d({{lat1/1e5,lon1/1e5},{lat2/1e5,lon2/1e5}},50)
    local plbwd=reverse_pl4d(plfwd)
    local asfwd,lengthfwd=avg_speed_and_length_4d(plfwd)
