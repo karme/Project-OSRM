@@ -223,6 +223,7 @@ void ExtractionContainers::PrepareData(const std::string & outputFileName, const
                     assert(edgeIT->speed != -1);
 		    
                     double weight[2];
+		    double distance=0;
 		    try {
 		      // note: didn't find a way to get multiple return values with luabind
 		      // => using table
