@@ -5,7 +5,7 @@ if false then
    upsample_pl4d = get_upsample_pl4d("127.0.0.1",80)
 else
    require("profiles/elpro-tcp")
-   upsample_pl4d = get_upsample_pl4d("127.0.0.1",10000)
+   upsample_pl4d = get_upsample_pl4d("127.0.0.1",2223)
 end
 
 barrier_whitelist = { [""] = true, ["bollard"] = true, ["entrance"] = true, ["cattle_grid"] = true, ["border_control"] = true, ["toll_booth"] = true, ["sally_port"] = true, ["gate"] = true}
