@@ -1,8 +1,29 @@
-#!/usr/bin/lua
 function get_upsample_pl4d(host, port)
    local socket = require("socket")
    local client = assert(socket.tcp())
-   assert(client:connect(socket.dns.toip(host), port))
+   local assert_protocol
+
+   local function connect()
+      local retry=5
+      while not client:connect(socket.dns.toip(host), port) do
+	 -- print("connect failed retry="..retry)
+	 retry=retry-1
+	 if retry==0 then
+	    return false
+	 end
+	 socket.sleep(1)
+      end
+      assert(client:setoption("tcp-nodelay", true)==1)
+      -- print("connected")
+      assert_protocol(1,0)
+      return true
+   end
+
+   local function reconnect()
+      client:close()
+      client = assert(socket.tcp())
+      assert(connect())
+   end
 
    local function readline()
       local str
@@ -11,10 +32,24 @@ function get_upsample_pl4d(host, port)
       str, err, part = client:receive('*l')
       return str
    end
-
+   
    local function remote_eval(s)
-      assert(client:send(s))
-      return string.sub(readline(),string.len("gosh> ")+1)
+      local retry=5
+      local ret=false
+      while true do
+	 if client:send(s) then
+	    -- todo: lua socket implementation not ideal?
+	    -- strace shows receive+select+receive
+	    ret=readline()
+	    if ret then
+	       return ret
+	    end
+	 end
+	 -- print("send or read failed retry="..retry)
+	 retry=retry-1
+	 assert(retry>0)
+	 reconnect()
+      end
    end
 
    local function map(func, array)
@@ -25,8 +60,14 @@ function get_upsample_pl4d(host, port)
       return new_array
    end
 
+   local function string_prefix_p(p,s)
+      return string.sub(s,1,#p)==p
+   end
+
    local function parse_result(s)
       local r={}
+      -- check for error
+      assert(not string_prefix_p("(error", s))
       for i in string.gmatch(s, "%([^%)]+%)") do
 	 local p={}
 	 -- todo: crap
@@ -38,28 +79,16 @@ function get_upsample_pl4d(host, port)
       return r
    end
 
-
-   -- io.write("search for prompt")
-   assert(client:send("'ready\n"))
-   local line;
-   while 1 do
-      line=readline()
-      if (string.find(line,"ready")) then break end
-      -- io.write(".")
+   assert_protocol=function(rmaj,rmin)
+      -- print("check protocol version")
+      local protomaj,protomin=string.gmatch(remote_eval("(protocol-version)\n"), "%((%d+) (%d+)%)")()
+      assert(0+protomaj==rmaj)
+      assert(0+protomin>=rmin)
    end
-   -- print("ok")
-
-   -- todo
-   local function reverse(a)
-      local r={}
-      local n=table.maxn(a)
-      for i=1,n do
-	 r[n-i+1]=a[i]
-      end
-      return r
-   end
+   
+   assert(connect())
 
    return function(pl,dist)
-      return parse_result(remote_eval("(upsample-polyline->4d 'wgs84 '("..table.concat(map(function(x) return "("..table.concat(reverse(x)," ")..")" end, pl)," ")..") "..dist..")"))
+      return parse_result(remote_eval("(upsample-polyline->4d wgs84 ("..table.concat(map(function(x) return "("..table.concat(x," ")..")" end, pl)," ")..") "..dist..")\n"))
    end
 end

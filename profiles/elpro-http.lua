@@ -4,8 +4,19 @@ require("json")
 function get_upsample_pl4d(host, port)
    local clib = curl.easy_init()
    local url = 'http://'..host..':'..port..'/cgi-bin/elpro.fcgi?'
+
+   -- todo
+   local function reverse(a)
+      local r={}
+      local n=table.maxn(a)
+      for i=1,n do
+	 r[n-i+1]=a[i]
+      end
+      return r
+   end
+
    local function params(pl,dist)
-      return 'path='..table.concat(map(function(x) return table.concat(x,",") end, pl),"|")..'&upsample='..dist..'&format=sjs'
+      return 'path='..table.concat(map(function(x) return table.concat(reverse(x),",") end, pl),"|")..'&upsample='..dist..'&format=sjs'
    end
 
    -- input: 2d polyline

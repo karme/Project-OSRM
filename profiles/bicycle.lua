@@ -350,7 +350,7 @@ end
 -- notes:
 -- could be simplified if we stay with the simple gradient based speed function
 function segment_function(lat1, lon1, lat2, lon2, speed, maxspeed)
-   local plfwd=upsample_pl4d({{lat1/1e5,lon1/1e5},{lat2/1e5,lon2/1e5}},50)
+   local plfwd=upsample_pl4d({{lon1/1e5,lat1/1e5},{lon2/1e5,lat2/1e5}},50)
    local plbwd=reverse_pl4d(plfwd)
    local asfwd,lengthfwd=avg_speed_and_length_4d(plfwd)
    local asbwd,lengthbwd=avg_speed_and_length_4d(plbwd)
