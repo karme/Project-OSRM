@@ -20,6 +20,16 @@
 
 #include "ExtractionContainers.h"
 
+// from: https://raw.github.com/DennisOSRM/Project-OSRM/639d325b4b79e55f6f03f8582137cb2d39c9fd30/Util/Lua.h
+// todo: remove again and include Util/Lua.h after rebase
+static
+bool lua_function_exists(lua_State* lua_state, const char* name)
+{
+    using namespace luabind;
+    object g = globals(lua_state);
+    object func = g[name];
+    return func && type(func) == LUA_TFUNCTION;
+}
 
 void ExtractionContainers::PrepareData(const std::string & outputFileName, const std::string restrictionsFileName, const unsigned amountOfRAM, lua_State *myLuaState) {
     try {
@@ -206,6 +216,7 @@ void ExtractionContainers::PrepareData(const std::string & outputFileName, const
         nodesIT = allNodes.begin();
         edgeIT = allEdges.begin();
 
+        bool have_segment_function = lua_function_exists(myLuaState, "segment_function");
         while(edgeIT != allEdges.end() && nodesIT != allNodes.end()) {
             if(edgeIT->target < nodesIT->id){
                 ++edgeIT;
@@ -224,29 +235,34 @@ void ExtractionContainers::PrepareData(const std::string & outputFileName, const
 
                     double weight[2];
                     double distance=0;
-                    try {
-                        // note: didn't find a way to get multiple return values with luabind
-                        // => using table
-                        luabind::object r = luabind::call_function<luabind::object>
-                            (myLuaState,
-                             "segment_function",
-                             edgeIT->startCoord.lat, edgeIT->startCoord.lon,
-                             edgeIT->targetCoord.lat, edgeIT->targetCoord.lon,
-                             edgeIT->speed,
-                             edgeIT->maxspeed);
-                        weight[0]=luabind::object_cast<double>(r[1]);
-                        weight[1]=luabind::object_cast<double>(r[2]);
-                        distance=luabind::object_cast<double>(r[3]);
-                        // INFO("weight[0]=" << weight[0] << " weight[1]=" << weight[1] << " distance=" << distance);
-                    } catch (const luabind::error &er) {
-                        lua_State* Ler=er.state();
-                        std::cerr << "-- " << lua_tostring(Ler, -1) << std::endl;
-                        lua_pop(Ler, 1); // remove error message
-                        ERR(er.what());
-                    } catch (const std::exception &er) {
-                        ERR(er.what());
-                    } catch (...) {
-                        ERR("Unknown error!");
+                    if (have_segment_function) {
+                        try {
+                            // note: didn't find a way to get multiple return values with luabind
+                            // => using table
+                            luabind::object r = luabind::call_function<luabind::object>
+                                (myLuaState,
+                                 "segment_function",
+                                 edgeIT->startCoord.lat, edgeIT->startCoord.lon,
+                                 edgeIT->targetCoord.lat, edgeIT->targetCoord.lon,
+                                 edgeIT->speed,
+                                 edgeIT->maxspeed);
+                            weight[0]=luabind::object_cast<double>(r[1]);
+                            weight[1]=luabind::object_cast<double>(r[2]);
+                            distance=luabind::object_cast<double>(r[3]);
+                            // INFO("weight[0]=" << weight[0] << " weight[1]=" << weight[1] << " distance=" << distance);
+                        } catch (const luabind::error &er) {
+                            lua_State* Ler=er.state();
+                            std::cerr << "-- " << lua_tostring(Ler, -1) << std::endl;
+                            lua_pop(Ler, 1); // remove error message
+                            ERR(er.what());
+                        } catch (const std::exception &er) {
+                            ERR(er.what());
+                        } catch (...) {
+                            ERR("Unknown error!");
+                        }
+                    } else {
+                        weight[0] = ( distance * 10. ) / (edgeIT->speed / 3.6);
+                        weight[1] = weight[0];
                     }
 
                     int intDist = std::max(1, (int)distance);
