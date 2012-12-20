@@ -221,70 +221,70 @@ void ExtractionContainers::PrepareData(const std::string & outputFileName, const
                     edgeIT->targetCoord.lon = nodesIT->lon;
 
                     assert(edgeIT->speed != -1);
-		    
+
                     double weight[2];
-		    double distance=0;
-		    try {
-		      // note: didn't find a way to get multiple return values with luabind
-		      // => using table
-		      luabind::object r = luabind::call_function<luabind::object>
-			(myLuaState,
-			 "segment_function",
-			 edgeIT->startCoord.lat, edgeIT->startCoord.lon,
-			 edgeIT->targetCoord.lat, edgeIT->targetCoord.lon,
-			 edgeIT->speed,
-			 edgeIT->maxspeed);
-		      weight[0]=luabind::object_cast<double>(r[1]);
-		      weight[1]=luabind::object_cast<double>(r[2]);
-		      distance=luabind::object_cast<double>(r[3]);
-		      // INFO("weight[0]=" << weight[0] << " weight[1]=" << weight[1] << " distance=" << distance);
-		    } catch (const luabind::error &er) {
-		      lua_State* Ler=er.state();
-		      std::cerr << "-- " << lua_tostring(Ler, -1) << std::endl;
-		      lua_pop(Ler, 1); // remove error message
-		      ERR(er.what());
-		    } catch (const std::exception &er) {
-		      ERR(er.what());
-		    } catch (...) {
-		      ERR("Unknown error!");
-		    }
+                    double distance=0;
+                    try {
+                        // note: didn't find a way to get multiple return values with luabind
+                        // => using table
+                        luabind::object r = luabind::call_function<luabind::object>
+                            (myLuaState,
+                             "segment_function",
+                             edgeIT->startCoord.lat, edgeIT->startCoord.lon,
+                             edgeIT->targetCoord.lat, edgeIT->targetCoord.lon,
+                             edgeIT->speed,
+                             edgeIT->maxspeed);
+                        weight[0]=luabind::object_cast<double>(r[1]);
+                        weight[1]=luabind::object_cast<double>(r[2]);
+                        distance=luabind::object_cast<double>(r[3]);
+                        // INFO("weight[0]=" << weight[0] << " weight[1]=" << weight[1] << " distance=" << distance);
+                    } catch (const luabind::error &er) {
+                        lua_State* Ler=er.state();
+                        std::cerr << "-- " << lua_tostring(Ler, -1) << std::endl;
+                        lua_pop(Ler, 1); // remove error message
+                        ERR(er.what());
+                    } catch (const std::exception &er) {
+                        ERR(er.what());
+                    } catch (...) {
+                        ERR("Unknown error!");
+                    }
 
                     int intDist = std::max(1, (int)distance);
                     short zero = 0;
                     short one = 1;
-		    // note: maybe 2 half-edges!
-		    bool oneway = (weight[0]!=weight[1])
-		      || (edgeIT->direction == _Way::oneway)
-		      || (edgeIT->direction == _Way::opposite);
-		    switch(edgeIT->direction) {
-		    case _Way::notSure:
-		    case _Way::oneway:
-		    case _Way::bidirectional:
-		    case _Way::opposite:
-		      break;
-		    default:
-		      cerr << "[error] edge with no direction: " << edgeIT->direction << endl;
-		      assert(false);
-		      break;
-		    }
-		    for (int i=0; i<((weight[0]==weight[1])||(edgeIT->direction == _Way::oneway)||(edgeIT->direction == _Way::opposite) ? 1 : 2); ++i) {
-		      fout.write((char*)((i==0) ? &edgeIT->start : &edgeIT->target), sizeof(unsigned));
-		      fout.write((char*)((i==0) ? &edgeIT->target : &edgeIT->start), sizeof(unsigned));
-		      fout.write((char*)&intDist, sizeof(int));
-		      if (oneway)
-			fout.write((char*)&one, sizeof(short));
-		      else
-			fout.write((char*)&zero, sizeof(short));
-		      int intWeight = std::max(1, (int)std::floor((edgeIT->isDurationSet ? edgeIT->speed : weight[i])+.5) );
-		      fout.write((char*)&intWeight, sizeof(int));
-		      assert(edgeIT->type >= 0);
-		      fout.write((char*)&edgeIT->type, sizeof(short));
-		      fout.write((char*)&edgeIT->nameID, sizeof(unsigned));
-		      fout.write((char*)&edgeIT->isRoundabout, sizeof(bool));
-		      fout.write((char*)&edgeIT->ignoreInGrid, sizeof(bool));
-		      fout.write((char*)&edgeIT->isAccessRestricted, sizeof(bool));
-		      ++usedEdgeCounter;
-		    }
+                    // note: maybe 2 half-edges!
+                    bool oneway = (weight[0]!=weight[1])
+                        || (edgeIT->direction == _Way::oneway)
+                        || (edgeIT->direction == _Way::opposite);
+                    switch(edgeIT->direction) {
+                    case _Way::notSure:
+                    case _Way::oneway:
+                    case _Way::bidirectional:
+                    case _Way::opposite:
+                        break;
+                    default:
+                        cerr << "[error] edge with no direction: " << edgeIT->direction << endl;
+                        assert(false);
+                        break;
+                    }
+                    for (int i=0; i<((weight[0]==weight[1])||(edgeIT->direction == _Way::oneway)||(edgeIT->direction == _Way::opposite) ? 1 : 2); ++i) {
+                        fout.write((char*)((i==0) ? &edgeIT->start : &edgeIT->target), sizeof(unsigned));
+                        fout.write((char*)((i==0) ? &edgeIT->target : &edgeIT->start), sizeof(unsigned));
+                        fout.write((char*)&intDist, sizeof(int));
+                        if (oneway)
+                            fout.write((char*)&one, sizeof(short));
+                        else
+                            fout.write((char*)&zero, sizeof(short));
+                        int intWeight = std::max(1, (int)std::floor((edgeIT->isDurationSet ? edgeIT->speed : weight[i])+.5) );
+                        fout.write((char*)&intWeight, sizeof(int));
+                        assert(edgeIT->type >= 0);
+                        fout.write((char*)&edgeIT->type, sizeof(short));
+                        fout.write((char*)&edgeIT->nameID, sizeof(unsigned));
+                        fout.write((char*)&edgeIT->isRoundabout, sizeof(bool));
+                        fout.write((char*)&edgeIT->ignoreInGrid, sizeof(bool));
+                        fout.write((char*)&edgeIT->isAccessRestricted, sizeof(bool));
+                        ++usedEdgeCounter;
+                    }
                 }
                 ++edgeIT;
             }
