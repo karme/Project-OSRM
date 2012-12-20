@@ -43,7 +43,7 @@ function segment_function(lat1, lon1, lat2, lon2, speed, maxspeed)
    -- simple speed (scaling) function depending on gradient
    -- input: gradient
    -- output: speed
-   local function speed(g)
+   local function gradient_speed(g)
       if g>0 then
 	 return math.max(3/15,1-100/15*g)
       else
@@ -56,7 +56,7 @@ function segment_function(lat1, lon1, lat2, lon2, speed, maxspeed)
    local function avg_speed_and_length_4d(pl4d)
       local l=0+last(pl4d)[4]
       local dzs=dz(pl4d)
-      local speeds=map(speed, map(function(x) return x[2]/x[1] end, dzs))
+      local speeds=map(gradient_speed, map(function(x) return x[2]/x[1] end, dzs))
       local time=0
       for i=1,table.maxn(speeds) do
 	 time=time+dzs[i][1]/speeds[i]
