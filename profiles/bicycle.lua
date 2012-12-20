@@ -1,4 +1,8 @@
 -- Begin of globals
+
+-- modules must be in lua path
+require("segment3d")
+
 barrier_whitelist = { [""] = true, ["bollard"] = true, ["entrance"] = true, ["cattle_grid"] = true, ["border_control"] = true, ["toll_booth"] = true, ["sally_port"] = true, ["gate"] = true}
 access_tag_whitelist = { ["yes"] = true, ["permissive"] = true, ["designated"] = true	}
 access_tag_blacklist = { ["no"] = true, ["private"] = true, ["agricultural"] = true, ["forestery"] = true }
@@ -165,6 +169,7 @@ function way_function (way, numberOfNodesInWay)
 		way.direction = Way.bidirectional
 		way.ignore_in_grid = true
 		if durationIsValid(duration) then
+		        -- todo: shouldn't the weight at least be distributed according to segment lenghts?
 			way.speed = math.max( parseDuration(duration) / math.max(1, numberOfNodesInWay-1) )
 		 	way.is_duration_set = true
 		else
@@ -206,6 +211,7 @@ function way_function (way, numberOfNodesInWay)
 	-- maxspeed
 	if take_minimum_of_speeds then
 		if maxspeed and maxspeed>0 then
+			way.maxspeed = maxspeed
 			way.speed = math.min(way.speed, maxspeed)
 		end
 	end
