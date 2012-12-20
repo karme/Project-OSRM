@@ -296,19 +296,19 @@ function dz(pl)
    return r
 end
 
--- simple speed function depending on gradient
+-- simple speed (scaling) function depending on gradient
 -- input: gradient
 -- output: speed
 function speed(g)
    if g>0 then
-      return math.max(3,15-100*g)
+      return math.max(3/15,1-100/15*g)
    else
-      return math.min(50,15-50*g)
+      return math.min(50/15,1-50/15*g)
    end
 end
 
 -- input: 4d pl
--- output: average speed
+-- output: average speed (scale) and length
 function avg_speed_and_length_4d(pl4d)
    local l=0+last(pl4d)[4]
    local dzs=dz(pl4d)
@@ -360,14 +360,11 @@ function segment_function(lat1, lon1, lat2, lon2, speed, maxspeed)
    local asbwd,lengthbwd=avg_speed_and_length_4d(plbwd)
    assert(lengthfwd==lengthbwd)
    local length=lengthfwd
-	-- if maxspeed>0 and (speed*asfwd/15 > maxspeed or speed*asbwd/15 > maxspeed) then
-	-- 	print("maxspeed reached: "..(speed*asfwd/15).." "..(speed*asbwd/15).." "..maxspeed)
-	-- end
 	if maxspeed>0 then
-		return {length*10/(math.min(speed*asfwd/15,maxspeed)/3.6),
-				  length*10/(math.min(speed*asbwd/15,maxspeed)/3.6),
+		return {length*10/(math.min(speed*asfwd,maxspeed)/3.6),
+				  length*10/(math.min(speed*asbwd,maxspeed)/3.6),
 				  length}
 	else
-		return {length*10/((speed*asfwd/15)/3.6), length*10/((speed*asbwd/15)/3.6), length}
+		return {length*10/((speed*asfwd)/3.6), length*10/((speed*asbwd)/3.6), length}
 	end
 end
