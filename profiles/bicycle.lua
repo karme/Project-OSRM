@@ -1,10 +1,14 @@
 -- Begin of globals
 
+-- elpro modules must be in lua path
+-- you might want to use something like:
+-- LUA_PATH='./profiles/?.lua;;' ./osrm-extract ...
+-- if it isn't
 if false then
-   require("profiles/elpro-http")
+   require("elpro-http")
    upsample_pl4d = get_upsample_pl4d("127.0.0.1",80)
 else
-   require("profiles/elpro-tcp")
+   require("elpro-tcp")
    upsample_pl4d = get_upsample_pl4d("127.0.0.1",2223)
 end
 
