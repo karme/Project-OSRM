@@ -2,6 +2,9 @@
 
 -- Begin of globals
 
+-- modules must be in lua path
+require("segment3d")
+
 bollards_whitelist = { [""] = true, ["cattle_grid"] = true, ["border_control"] = true, ["toll_booth"] = true, ["sally_port"] = true, ["gate"] = true}
 access_tag_whitelist = { ["yes"] = true, ["foot"] = true, ["permissive"] = true, ["designated"] = true  }
 access_tag_blacklist = { ["no"] = true, ["private"] = true, ["agricultural"] = true, ["forestery"] = true }
@@ -158,6 +161,9 @@ function way_function (way, numberOfNodesInWay)
       end
       way.speed = math.min(speed_profile["default"], maxspeed)
     end
+
+  -- needed in the segment callback  
+    way.maxspeed = maxspeed
 
   -- Set access restriction flag if access is allowed under certain restrictions only
     if access ~= "" and access_tag_restricted[access] then
