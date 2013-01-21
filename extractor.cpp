@@ -111,7 +111,8 @@ int main (int argc, char *argv[]) {
     parser->Parse();
     INFO("parsing finished after " << get_timestamp() - time << " seconds");
 
-    externalMemory.PrepareData(outputFileName, restrictionsFileName, amountOfRAM);
+    // todo
+    externalMemory.PrepareData(outputFileName, restrictionsFileName, amountOfRAM, scriptingEnvironment.luaStateVector[0]);
 
     stringMap.clear();
     delete parser;

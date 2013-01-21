@@ -27,6 +27,13 @@
 #include "ExtractorStructs.h"
 #include "../DataStructures/TimingUtil.h"
 
+extern "C" {
+#include <lua.h>
+#include <lauxlib.h>
+#include <lualib.h>
+}
+#include <luabind/luabind.hpp>
+
 class ExtractionContainers {
 public:
     typedef stxxl::vector<NodeID> STXXLNodeIDVector;
@@ -55,7 +62,7 @@ public:
         wayStartEndVector.clear();
     }
 
-    void PrepareData( const std::string & outputFileName, const std::string restrictionsFileName, const unsigned amountOfRAM);
+    void PrepareData( const std::string & outputFileName, const std::string restrictionsFileName, const unsigned amountOfRAM, lua_State *myLuaState);
 
     STXXLNodeIDVector           usedNodeIDs;
     STXXLNodeVector             allNodes;
