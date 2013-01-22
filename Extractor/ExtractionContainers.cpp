@@ -266,6 +266,8 @@ void ExtractionContainers::PrepareData(const std::string & outputFileName, const
                     }
 
                     int intDist = std::max(1, (int)distance);
+                    int intWeight[2] = { std::max(1, (int)std::floor((edgeIT->isDurationSet ? edgeIT->speed : weight[0])+.5) ),
+                                         std::max(1, (int)std::floor((edgeIT->isDurationSet ? edgeIT->speed : weight[1])+.5) ) };
                     short zero = 0;
                     short one = 1;
                     // note: maybe 2 half-edges!
@@ -283,7 +285,7 @@ void ExtractionContainers::PrepareData(const std::string & outputFileName, const
                       assert(false);
                         break;
                     }
-                    for (int i=0; i<((weight[0]==weight[1])||(edgeIT->direction == _Way::oneway)||(edgeIT->direction == _Way::opposite) ? 1 : 2); ++i) {
+                    for (int i=0; i<((intWeight[0]==intWeight[1])||(edgeIT->direction == _Way::oneway)||(edgeIT->direction == _Way::opposite) ? 1 : 2); ++i) {
                         fout.write((char*)((i==0) ? &edgeIT->start : &edgeIT->target), sizeof(unsigned));
                         fout.write((char*)((i==0) ? &edgeIT->target : &edgeIT->start), sizeof(unsigned));
                         fout.write((char*)&intDist, sizeof(int));
@@ -291,8 +293,7 @@ void ExtractionContainers::PrepareData(const std::string & outputFileName, const
                             fout.write((char*)&one, sizeof(short));
                         else
                             fout.write((char*)&zero, sizeof(short));
-                        int intWeight = std::max(1, (int)std::floor((edgeIT->isDurationSet ? edgeIT->speed : weight[i])+.5) );
-                        fout.write((char*)&intWeight, sizeof(int));
+                        fout.write((char*)&(intWeight[i]), sizeof(int));
                         assert(edgeIT->type >= 0);
                         fout.write((char*)&edgeIT->type, sizeof(short));
                         fout.write((char*)&edgeIT->nameID, sizeof(unsigned));
