@@ -101,11 +101,25 @@ function segment_function(lat1, lon1, lat2, lon2, speed, maxspeed)
    local asbwd,lengthbwd=avg_speed_and_length_4d(plbwd)
    assert(lengthfwd==lengthbwd)
    local length=lengthfwd
+   local weightfwd
+   local weightbwd
    if maxspeed>0 then
-      return {length*10/(math.min(speed*asfwd,maxspeed)/3.6),
-	      length*10/(math.min(speed*asbwd,maxspeed)/3.6),
-	      length}
+      weightfwd=length*10/(math.min(speed*asfwd,maxspeed)/3.6)
+      weightbwd=length*10/(math.min(speed*bwfwd,maxspeed)/3.6)
    else
-      return {length*10/((speed*asfwd)/3.6), length*10/((speed*asbwd)/3.6), length}
+      weightfwd=length*10/((speed*asfwd)/3.6)
+      weightbwd=length*10/((speed*asbwd)/3.6)
    end
+   -- todo:
+   -- if forward and backward weights are nearly identical we might want
+   -- to use the same weight for both directions to create less directed edges
+   -- (suggested by prozessor13)
+   -- note:
+   -- weights are converted to ints in the native code and only if those differ
+   -- directed edges are used (=> imho good enough for now)
+   -- if nearly_same(weightfwd,weightbwd) then
+   --    weightfwd=avg(weightfwd,weightbwd)
+   --    weightbwd=weightfwd
+   -- end
+   return {weightfwd,weightbwd,length}
 end
