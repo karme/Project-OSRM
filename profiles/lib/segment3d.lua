@@ -105,7 +105,7 @@ function segment_function(lat1, lon1, lat2, lon2, speed, maxspeed)
    local weightbwd
    if maxspeed>0 then
       weightfwd=length*10/(math.min(speed*asfwd,maxspeed)/3.6)
-      weightbwd=length*10/(math.min(speed*bwfwd,maxspeed)/3.6)
+      weightbwd=length*10/(math.min(speed*asbwd,maxspeed)/3.6)
    else
       weightfwd=length*10/((speed*asfwd)/3.6)
       weightbwd=length*10/((speed*asbwd)/3.6)
