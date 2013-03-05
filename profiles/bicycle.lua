@@ -1,4 +1,5 @@
 require("lib/access")
+require("lib/elevation")
 
 -- Begin of globals
 barrier_whitelist = { [""] = true, ["cycle_barrier"] = true, ["bollard"] = true, ["entrance"] = true, ["cattle_grid"] = true, ["border_control"] = true, ["toll_booth"] = true, ["sally_port"] = true, ["gate"] = true, ["no"] = true}
@@ -111,6 +112,32 @@ function node_function (node)
 	return 1
 end
 
+local function print_way(way)
+    local r=''
+    for k,v in pairs({'speed','backward_speed','direction','duration','name','ignore_in_grid','is_access_restricted','roundabout'}) do
+       r=r..v..'='
+       if type(way[v])=='boolean' then
+          r=r..(way[v] and 'true' or 'false')
+       elseif v=='direction' then
+          r=r..((way[v]==Way.bidirectional and 'bidirectional') or (way[v]==Way.oneway and 'oneway') or (way[v]==Way.opposite and 'oneway reverse') or 'bug!')
+       else
+          r=r..way[v]
+       end
+       r=r..' '
+    end
+    print(r)
+end
+
+-- input: way
+-- output: way, return value is ignored
+-- way.speed
+-- way.backward_speed
+-- way.direction (Way.bidirectional|Way.oneway|Way.opposite) (todo: i am not sure how 'speed','backward_speed' and 'direction' interact - wouldn't it be simpler to calculate direction from speed fwd/bwd or remove direction in the lua profile alltogether?)
+-- way.duration
+-- way.name
+-- way.ignore_in_grid
+-- way.is_access_restricted?
+-- way.roundabout?
 function way_function (way)
 	-- initial routability check, filters out buildings, boundaries, etc
 	local highway = way.tags:Find("highway")
@@ -286,27 +313,41 @@ function way_function (way)
 		way.speed = bicycle_speeds["cycleway"]
 	end
 
+    -- adjust speed for elevation
+    local elevation_profile = Elevation.parse_profile(way.tags:Find("profile"))
+    if elevation_profile then
+       local cspeed_fwd=way.speed
+       -- note: backward_speed might be set!
+       local cspeed_bwd=way.backward_speed > 0 and way.backward_speed or way.speed
+       local speed_scale_fwd, speed_scale_bwd = Elevation.speed_scales(elevation_profile)
+       if cspeed_fwd > 0 then
+          way.speed = cspeed_fwd * speed_scale_fwd
+       end
+       if cspeed_bwd > 0 then
+          way.backward_speed = cspeed_bwd * speed_scale_bwd
+       end
+    end
+
 	-- maxspeed
-	-- TODO: maxspeed of backward direction
 	if take_minimum_of_speeds then
-		if maxspeed and maxspeed>0 then
-			way.speed = math.min(way.speed, maxspeed)
-		end
-	end
-
-  -- Override speed settings if explicit forward/backward maxspeeds are given
-    if maxspeed_forward ~= nil and maxspeed_forward > 0 then
-	if Way.bidirectional == way.direction then
-          way.backward_speed = way.speed
-        end
-        way.speed = maxspeed_forward
+       way.speed=math.min(way.speed,
+                          (maxspeed_forward and maxspeed_forward > 0 and maxspeed_forward)
+                             or (maxspeed and maxspeed > 0 and maxspeed)
+                             or 1/0
+                         )
+       way.backward_speed=math.min(way.backward_speed,
+                                         (maxspeed_backward and maxspeed_backward > 0 and maxspeed_backward)
+                                            or (maxspeed and maxspeed > 0 and maxspeed)
+                                            or 1/0
+                                        )
     end
-    if maxspeed_backward ~= nil and maxspeed_backward > 0 then
-      way.backward_speed = maxspeed_backward
-    end
+    -- todo:
+    -- if forward and backward speed are nearly identical we might want
+    -- to use the same speed for both directions to create less directed edges
+    -- (suggested by prozessor13)
 
+    -- print_way(way)
 
-	
 	way.type = 1
 	return 1
 end
