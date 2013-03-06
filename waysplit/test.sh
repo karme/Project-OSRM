@@ -26,7 +26,7 @@ test -z "$OSM_IN" && OSM_IN="test.osm.bz2"
 test -e "$OSM_IN"
 
 OSM_OUT="$2"
-test -z "$OSM_OUT" && OSM_OUT="${OSM_IN%*.osm.bz2}_out.osm.bz2"
+test -z "$OSM_OUT" && OSM_OUT="${OSM_IN%*.osm.bz2}_out.osm.pbf"
 test ! -e "$OSM_OUT" || {
     echo "$OSM_OUT exists"
     exit 1
@@ -39,6 +39,12 @@ function infilter()
     pv|bzcat
     # note: doesn't help if file was not compressed with pbzip2!
     # pv|pbzip2 -d
+}
+
+function outfilter()
+{
+    #pbzip2 > "$OSM_OUT"
+    osmosis --read-xml - --write-pbf "$OSM_OUT" omitmetadata=true
 }
 
 # store a sparse set/bitmap to a dbm file
@@ -87,9 +93,9 @@ PSPLITS=2
 if [ $(cpus) -gt 2 ]; then
     PSPLITS=$[$(cpus)/2]
 fi
-pv osm_as_sxml.scm| { ./parallel-pipe.scm $PSPLITS read-line print-line read-blob write-blob ./apply-way-splits.scm way-splits.dbm parallel-pipe|./fastsxml2xml.scm|pbzip2 > "$OSM_OUT" ; } |& tee restrictions.log|grep ' WARNING!\| INFO:'
+pv osm_as_sxml.scm| { ./parallel-pipe.scm $PSPLITS read-line print-line read-blob write-blob ./apply-way-splits.scm way-splits.dbm parallel-pipe|./fastsxml2xml.scm|outfilter ; } |& tee restrictions.log|grep ' WARNING!\| INFO:'
 # serial version
-#pv osm_as_sxml.scm| { ./apply-way-splits.scm way-splits.dbm write-lines|./fastsxml2xml.scm|pbzip2 > "$OSM_OUT" ; } |& tee restrictions.log|grep ' WARNING!\| INFO:'
+#pv osm_as_sxml.scm| { ./apply-way-splits.scm way-splits.dbm write-lines|./fastsxml2xml.scm|outfilter ; } |& tee restrictions.log|grep ' WARNING!\| INFO:'
 
 # remove temp files
 # rm -v real-nodes.dbm max-id.out osm_as_sxml.scm way-splits.dbm restrictions.log
