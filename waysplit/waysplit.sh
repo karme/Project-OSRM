@@ -84,7 +84,7 @@ pv $MYTMPDIR/osm_as_sxml.scm|grep '^(way'|./parallel-pipe.scm $(cpus) read-line 
 
 msg "D) parse relations (todo: could be pipelined)"
 pv $MYTMPDIR/osm_as_sxml.scm|grep '^(relation'|./relations.scm $MYTMPDIR/way-relation.dbm $MYTMPDIR/relation.dbm
-} > &2
+} >&2
 
 msg "E) drop unused nodes, apply way splits, profile ways, denormalize relations, fix way references in restriction relations, transform sxml to xml"
 PSPLITS=2
