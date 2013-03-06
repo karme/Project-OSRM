@@ -64,6 +64,9 @@
       (until (read) eof-object? => expr
              (assert (eq? (car expr) 'relation))
              ;; filter interesting relations
+             ;; todo: maybe there are other interesting relation types?
+             ;; note: in my osrm lua profile i assume at the moment,
+             ;; that every relation has a type!
              (when (is-route? expr)
                (let1 id (relation-id expr)
                  (for-each (lambda(ref)
