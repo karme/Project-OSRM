@@ -25,7 +25,10 @@ OSM_IN="$1"
 test -z "$OSM_IN" && OSM_IN="test.osm.bz2"
 test -e "$OSM_IN"
 
-echo Processing "$OSM_IN" to stdout
+function msg()
+{
+    echo "$@" >&2
+}
 
 function infilter()
 {
@@ -63,24 +66,27 @@ function cpus()
 }
 
 MYTMPDIR="$(mktemp -d)"
+{
+msg Processing "$OSM_IN" to stdout using temporary directory $MYTMPDIR
 
-echo "A) extract used nodes, real nodes, max id and transform xml to sxml"
+msg "A) extract used nodes, real nodes, max id and transform xml to sxml"
 < "$OSM_IN" infilter|tee \
     >(./fastxml2sxml.scm|grep '^(\(node\|way.*k "highway"\|relation\)'|tee >(grep '^(way'|./used-nodes.scm|sort -n|tee >(uniq -d|store-sparse-bitmap-dbm $MYTMPDIR/real-nodes.dbm)|uniq|store-sparse-bitmap-dbm $MYTMPDIR/used-nodes.dbm) > $MYTMPDIR/osm_as_sxml.scm) \
     |max-id > $MYTMPDIR/max-id.out
 
-echo "B) store used nodes positions (depends on A)"
+msg "B) store used nodes positions (depends on A)"
 pv $MYTMPDIR/osm_as_sxml.scm|grep '^(node'|./used-nodes-pos.scm $MYTMPDIR/used-nodes.dbm|./store-node-pos.scm $MYTMPDIR/node-pos.dbm "$(cat $MYTMPDIR/max-id.out)"
 # note: don't need used-nodes.dbm anymore
 #rm -v $MYTMPDIR/used-nodes.dbm
 
-echo "C) calculate way splits (depends on A, todo: could be merged with B)"
+msg "C) calculate way splits (depends on A, todo: could be merged with B)"
 pv $MYTMPDIR/osm_as_sxml.scm|grep '^(way'|./parallel-pipe.scm $(cpus) read-line print-line read-line print ./way-splits.scm $MYTMPDIR/real-nodes.dbm |./store-way-splits.scm "$(cat $MYTMPDIR/max-id.out)" $MYTMPDIR/way-splits.dbm
 
-echo "D) parse relations (todo: could be pipelined)"
+msg "D) parse relations (todo: could be pipelined)"
 pv $MYTMPDIR/osm_as_sxml.scm|grep '^(relation'|./relations.scm $MYTMPDIR/way-relation.dbm $MYTMPDIR/relation.dbm
+} > &2
 
-echo "E) drop unused nodes, apply way splits, profile ways, denormalize relations, fix way references in restriction relations, transform sxml to xml"
+msg "E) drop unused nodes, apply way splits, profile ways, denormalize relations, fix way references in restriction relations, transform sxml to xml"
 PSPLITS=2
 if [ $(cpus) -gt 2 ]; then
     PSPLITS=$[$(cpus)/2]
@@ -89,8 +95,10 @@ pv $MYTMPDIR/osm_as_sxml.scm| { ./parallel-pipe.scm $PSPLITS read-line print-lin
 # serial version
 #pv $MYTMPDIR/osm_as_sxml.scm| { ./apply-way-splits.scm write-lines $MYTMPDIR/way-splits.dbm $MYTMPDIR/node-pos.dbm $MYTMPDIR/way-relation.dbm $MYTMPDIR/relation.dbm|./fastsxml2xml.scm|outfilter ; } |& tee $MYTMPDIR/waysplit.log|grep ' WARNING!\| INFO:'
 
+{
 # remove temp files
 rm -v $MYTMPDIR/real-nodes.dbm $MYTMPDIR/osm_as_sxml.scm $MYTMPDIR/max-id.out $MYTMPDIR/node-pos.dbm $MYTMPDIR/way-splits.dbm $MYTMPDIR/way-relation.dbm $MYTMPDIR/relation.dbm 
 rm -v $MYTMPDIR/used-nodes.dbm
 rm -v $MYTMPDIR/waysplit.log
 rmdir $MYTMPDIR
+} >&2
