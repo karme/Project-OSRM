@@ -25,14 +25,7 @@ OSM_IN="$1"
 test -z "$OSM_IN" && OSM_IN="test.osm.bz2"
 test -e "$OSM_IN"
 
-OSM_OUT="$2"
-test -z "$OSM_OUT" && OSM_OUT="${OSM_IN%*.osm.bz2}_out.osm.pbf"
-test ! -e "$OSM_OUT" || {
-    echo "$OSM_OUT exists"
-    exit 1
-}
-
-echo Processing "$OSM_IN" to "$OSM_OUT"
+echo Processing "$OSM_IN" to stdout
 
 function infilter()
 {
@@ -43,8 +36,8 @@ function infilter()
 
 function outfilter()
 {
-    #pbzip2 > "$OSM_OUT"
-    osmosis --read-xml - --write-pbf "$OSM_OUT" omitmetadata=true
+    #pbzip2
+    osmosis --read-xml - --write-pbf - omitmetadata=true
 }
 
 # store a sparse set/bitmap to a dbm file
