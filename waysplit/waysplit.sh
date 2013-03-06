@@ -62,33 +62,35 @@ function cpus()
     grep ^proc /proc/cpuinfo |wc -l
 }
 
+MYTMPDIR="$(mktemp -d)"
+
 echo "A) extract used nodes, real nodes, max id and transform xml to sxml"
 < "$OSM_IN" infilter|tee \
-    >(./fastxml2sxml.scm|grep '^(\(node\|way.*k "highway"\|relation\)'|tee >(grep '^(way'|./used-nodes.scm|sort -n|tee >(uniq -d|store-sparse-bitmap-dbm real-nodes.dbm)|uniq|store-sparse-bitmap-dbm used-nodes.dbm) > osm_as_sxml.scm) \
-    |max-id > max-id.out
+    >(./fastxml2sxml.scm|grep '^(\(node\|way.*k "highway"\|relation\)'|tee >(grep '^(way'|./used-nodes.scm|sort -n|tee >(uniq -d|store-sparse-bitmap-dbm $MYTMPDIR/real-nodes.dbm)|uniq|store-sparse-bitmap-dbm $MYTMPDIR/used-nodes.dbm) > $MYTMPDIR/osm_as_sxml.scm) \
+    |max-id > $MYTMPDIR/max-id.out
 
 echo "B) store used nodes positions (depends on A)"
-rm -vf node-pos.dbm
-pv osm_as_sxml.scm|grep '^(node'|./used-nodes-pos.scm used-nodes.dbm|./store-node-pos.scm node-pos.dbm "$(cat max-id.out)"
+pv $MYTMPDIR/osm_as_sxml.scm|grep '^(node'|./used-nodes-pos.scm $MYTMPDIR/used-nodes.dbm|./store-node-pos.scm $MYTMPDIR/node-pos.dbm "$(cat $MYTMPDIR/max-id.out)"
 # note: don't need used-nodes.dbm anymore
-#rm -v used-nodes.dbm
+#rm -v $MYTMPDIR/used-nodes.dbm
 
 echo "C) calculate way splits (depends on A, todo: could be merged with B)"
-rm -vf way-splits.dbm
-pv osm_as_sxml.scm|grep '^(way'|./parallel-pipe.scm $(cpus) read-line print-line read-line print ./way-splits.scm real-nodes.dbm |./store-way-splits.scm "$(cat max-id.out)" way-splits.dbm
+pv $MYTMPDIR/osm_as_sxml.scm|grep '^(way'|./parallel-pipe.scm $(cpus) read-line print-line read-line print ./way-splits.scm $MYTMPDIR/real-nodes.dbm |./store-way-splits.scm "$(cat $MYTMPDIR/max-id.out)" $MYTMPDIR/way-splits.dbm
 
 echo "D) parse relations (todo: could be pipelined)"
-rm -vf way-relation.dbm relation.dbm
-pv osm_as_sxml.scm|grep '^(relation'|./relations.scm
+pv $MYTMPDIR/osm_as_sxml.scm|grep '^(relation'|./relations.scm $MYTMPDIR/way-relation.dbm $MYTMPDIR/relation.dbm
 
 echo "E) drop unused nodes, apply way splits, profile ways, denormalize relations, fix way references in restriction relations, transform sxml to xml"
 PSPLITS=2
 if [ $(cpus) -gt 2 ]; then
     PSPLITS=$[$(cpus)/2]
 fi
-pv osm_as_sxml.scm| { ./parallel-pipe.scm $PSPLITS read-line print-line read-blob write-blob ./apply-way-splits.scm way-splits.dbm parallel-pipe|./fastsxml2xml.scm|outfilter ; } |& tee restrictions.log|grep ' WARNING!\| INFO:'
+pv $MYTMPDIR/osm_as_sxml.scm| { ./parallel-pipe.scm $PSPLITS read-line print-line read-blob write-blob ./apply-way-splits.scm parallel-pipe $MYTMPDIR/way-splits.dbm $MYTMPDIR/node-pos.dbm $MYTMPDIR/way-relation.dbm $MYTMPDIR/relation.dbm|./fastsxml2xml.scm|outfilter ; } |& tee $MYTMPDIR/waysplit.log|grep ' WARNING!\| INFO:'
 # serial version
-#pv osm_as_sxml.scm| { ./apply-way-splits.scm way-splits.dbm write-lines|./fastsxml2xml.scm|outfilter ; } |& tee restrictions.log|grep ' WARNING!\| INFO:'
+#pv $MYTMPDIR/osm_as_sxml.scm| { ./apply-way-splits.scm write-lines $MYTMPDIR/way-splits.dbm $MYTMPDIR/node-pos.dbm $MYTMPDIR/way-relation.dbm $MYTMPDIR/relation.dbm|./fastsxml2xml.scm|outfilter ; } |& tee $MYTMPDIR/waysplit.log|grep ' WARNING!\| INFO:'
 
 # remove temp files
-# rm -v real-nodes.dbm max-id.out osm_as_sxml.scm way-splits.dbm restrictions.log
+rm -v $MYTMPDIR/real-nodes.dbm $MYTMPDIR/osm_as_sxml.scm $MYTMPDIR/max-id.out $MYTMPDIR/node-pos.dbm $MYTMPDIR/way-splits.dbm $MYTMPDIR/way-relation.dbm $MYTMPDIR/relation.dbm 
+rm -v $MYTMPDIR/used-nodes.dbm
+rm -v $MYTMPDIR/waysplit.log
+rmdir $MYTMPDIR
