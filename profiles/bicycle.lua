@@ -128,6 +128,40 @@ local function print_way(way)
     print(r)
 end
 
+local function way_is_part_of_cycle_route(way)
+   local i=0
+   local rel_type
+   while true do
+      -- todo: assumes all relations have a type tag
+      rel_type=way.tags:Find("rel["..i.."]:type")
+      if rel_type == '' then break end
+      if rel_type=='route' and way.tags:Find("rel["..i.."]:route")=='bicycle' then
+         return true
+      end
+      i=i+1
+   end
+   return false
+end
+
+local function way_is_cycleway(way)
+   local cycleway = way.tags:Find("cycleway")
+   local cycleway_left = way.tags:Find("cycleway:left")
+   local cycleway_right = way.tags:Find("cycleway:right")
+   return (cycleway and cycleway_tags[cycleway]) or (cycleway_left and cycleway_tags[cycleway_left]) or (cycleway_right and cycleway_tags[cycleway_right]) or way_is_part_of_cycle_route(way)
+end
+
+local function scale_way_speeds(way, fwd, bwd)
+   local cspeed_fwd=way.speed
+   -- note: backward_speed might be set!
+   local cspeed_bwd=way.backward_speed > 0 and way.backward_speed or way.speed
+   if cspeed_fwd > 0 then
+      way.speed = cspeed_fwd * fwd
+   end
+   if cspeed_bwd > 0 then
+      way.backward_speed = cspeed_bwd * bwd
+   end
+end
+
 -- input: way
 -- output: way, return value is ignored
 -- way.speed
@@ -305,27 +339,22 @@ function way_function (way)
 
 	
 	-- cycleways
-	if cycleway and cycleway_tags[cycleway] then
-		way.speed = bicycle_speeds["cycleway"]
-	elseif cycleway_left and cycleway_tags[cycleway_left] then
-		way.speed = bicycle_speeds["cycleway"]
-	elseif cycleway_right and cycleway_tags[cycleway_right] then
-		way.speed = bicycle_speeds["cycleway"]
-	end
+    if way_is_cycleway(way) then
+       way.speed = bicycle_speeds["cycleway"]
+    end
+
+    -- prefer cycle ways
+    -- we really need edge cost != time here
+    if way_is_cycleway(way) then
+       scale_way_speeds(way, 2, 2)
+       -- print_way(way)
+    end
 
     -- adjust speed for elevation
     local elevation_profile = Elevation.parse_profile(way.tags:Find("profile"))
     if elevation_profile then
-       local cspeed_fwd=way.speed
-       -- note: backward_speed might be set!
-       local cspeed_bwd=way.backward_speed > 0 and way.backward_speed or way.speed
        local speed_scale_fwd, speed_scale_bwd = Elevation.speed_scales(elevation_profile)
-       if cspeed_fwd > 0 then
-          way.speed = cspeed_fwd * speed_scale_fwd
-       end
-       if cspeed_bwd > 0 then
-          way.backward_speed = cspeed_bwd * speed_scale_bwd
-       end
+       scale_way_speeds(way, speed_scale_fwd, speed_scale_bwd)
     end
 
 	-- maxspeed
