@@ -214,8 +214,8 @@
                    (tag (@ (k "length") (v ,way-length)))))))
 
 (define (main args)
-  (let-optionals* (cdr args) ((way-splits "way-splits.dbm")
-                              (output-format "parallel-pipe")
+  (let-optionals* (cdr args) ((output-format "parallel-pipe")
+			      (way-splits "way-splits.dbm")
 			      ;;(used-nodes "used-nodes.dbm")
                               (node-pos-file "node-pos.dbm")
                               (way-relation-file "way-relation.dbm")
