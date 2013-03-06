@@ -91,9 +91,10 @@ PSPLITS=2
 if [ $(cpus) -gt 2 ]; then
     PSPLITS=$[$(cpus)/2]
 fi
-pv $MYTMPDIR/osm_as_sxml.scm| { ./parallel-pipe.scm $PSPLITS read-line print-line read-blob write-blob ./apply-way-splits.scm parallel-pipe $MYTMPDIR/way-splits.dbm $MYTMPDIR/node-pos.dbm $MYTMPDIR/way-relation.dbm $MYTMPDIR/relation.dbm|./fastsxml2xml.scm|outfilter ; } |& { tee $MYTMPDIR/waysplit.log|grep ' WARNING!\| INFO:' >&2 }
+pv $MYTMPDIR/osm_as_sxml.scm| { ./parallel-pipe.scm $PSPLITS read-line print-line read-blob write-blob ./apply-way-splits.scm parallel-pipe $MYTMPDIR/way-splits.dbm $MYTMPDIR/node-pos.dbm $MYTMPDIR/way-relation.dbm $MYTMPDIR/relation.dbm|./fastsxml2xml.scm|outfilter ; } 2> $MYTMPDIR/waysplit.log
 # serial version
-#pv $MYTMPDIR/osm_as_sxml.scm| { ./apply-way-splits.scm write-lines $MYTMPDIR/way-splits.dbm $MYTMPDIR/node-pos.dbm $MYTMPDIR/way-relation.dbm $MYTMPDIR/relation.dbm|./fastsxml2xml.scm|outfilter ; } |& { tee $MYTMPDIR/waysplit.log|grep ' WARNING!\| INFO:' >&2 }
+#pv $MYTMPDIR/osm_as_sxml.scm| { ./apply-way-splits.scm write-lines $MYTMPDIR/way-splits.dbm $MYTMPDIR/node-pos.dbm $MYTMPDIR/way-relation.dbm $MYTMPDIR/relation.dbm|./fastsxml2xml.scm|outfilter ; } 2> $MYTMPDIR/waysplit.log
+grep ' WARNING!\| INFO:' $MYTMPDIR/waysplit.log >&2
 
 {
 # remove temp files
