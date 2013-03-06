@@ -40,7 +40,7 @@ function infilter()
 function outfilter()
 {
     #pbzip2
-    osmosis --read-xml - --write-pbf - omitmetadata=true
+    osmosis --read-xml - --write-pbf /dev/stdout omitmetadata=true
 }
 
 # store a sparse set/bitmap to a dbm file
