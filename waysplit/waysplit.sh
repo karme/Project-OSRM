@@ -21,13 +21,15 @@
 
 set -o pipefail
 
-OSM_IN="$1"
-test -z "$OSM_IN" && OSM_IN="test.osm.bz2"
-test -e "$OSM_IN"
-
 function msg()
 {
     echo "$@" >&2
+}
+
+function atexit()
+{
+    local R=$?
+    test 0 -ne $R && msg ERROR: $R maybe see also $MYTMPDIR/waysplit.log || true
 }
 
 function infilter()
@@ -35,12 +37,6 @@ function infilter()
     pv|bzcat
     # note: doesn't help if file was not compressed with pbzip2!
     # pv|pbzip2 -d
-}
-
-function outfilter()
-{
-    #pbzip2
-    osmosis --read-xml - --write-pbf /dev/stdout omitmetadata=true
 }
 
 # store a sparse set/bitmap to a dbm file
@@ -64,6 +60,12 @@ function cpus()
 {
     grep ^proc /proc/cpuinfo |wc -l
 }
+
+trap atexit EXIT 
+
+OSM_IN="$1"
+test -z "$OSM_IN" && OSM_IN="test.osm.bz2"
+test -e "$OSM_IN"
 
 MYTMPDIR="$(mktemp -d)"
 {
@@ -91,9 +93,9 @@ PSPLITS=2
 if [ $(cpus) -gt 2 ]; then
     PSPLITS=$[$(cpus)/2]
 fi
-pv $MYTMPDIR/osm_as_sxml.scm| { ./parallel-pipe.scm $PSPLITS read-line print-line read-blob write-blob ./apply-way-splits.scm parallel-pipe $MYTMPDIR/way-splits.dbm $MYTMPDIR/node-pos.dbm $MYTMPDIR/way-relation.dbm $MYTMPDIR/relation.dbm|./fastsxml2xml.scm|outfilter ; } 2> $MYTMPDIR/waysplit.log
+pv $MYTMPDIR/osm_as_sxml.scm| { ./parallel-pipe.scm $PSPLITS read-line print-line read-blob write-blob ./apply-way-splits.scm parallel-pipe $MYTMPDIR/way-splits.dbm $MYTMPDIR/node-pos.dbm $MYTMPDIR/way-relation.dbm $MYTMPDIR/relation.dbm|./fastsxml2xml.scm ; } 2> $MYTMPDIR/waysplit.log
 # serial version
-#pv $MYTMPDIR/osm_as_sxml.scm| { ./apply-way-splits.scm write-lines $MYTMPDIR/way-splits.dbm $MYTMPDIR/node-pos.dbm $MYTMPDIR/way-relation.dbm $MYTMPDIR/relation.dbm|./fastsxml2xml.scm|outfilter ; } 2> $MYTMPDIR/waysplit.log
+#pv $MYTMPDIR/osm_as_sxml.scm| { ./apply-way-splits.scm write-lines $MYTMPDIR/way-splits.dbm $MYTMPDIR/node-pos.dbm $MYTMPDIR/way-relation.dbm $MYTMPDIR/relation.dbm|./fastsxml2xml.scm ; } 2> $MYTMPDIR/waysplit.log
 grep ' WARNING!\| INFO:' $MYTMPDIR/waysplit.log >&2
 
 {
