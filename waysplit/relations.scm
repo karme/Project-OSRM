@@ -35,10 +35,19 @@
 (define relation-id
   (compose string->exact (car-sxpath '(@ id *text*))))
 
+;; todo: return role
 (define relation-references
-  (let1 f (sxpath '(// @ ref *text*))
+  (let1 f (sxpath '(member @ ref *text*))
     (lambda(rel)
       (f rel))))
+
+(define relation-references-and-roles
+  (let ((members (sxpath '(member)))
+        (ref-and-role (sxpath '(@ (or@ ref role)))))
+    (let1 f (compose (cute map ref-and-role <>)
+                     members)
+      (lambda(rel)
+        (f rel)))))
 
 (define relation-type
   ;; '(tag (@ (k (equal? "type"))) v *text*))
@@ -69,12 +78,14 @@
              ;; that every relation has a type!
              (when (is-route? expr)
                (let1 id (relation-id expr)
-                 (for-each (lambda(ref)
-                             (dbm-put! way-relation
-                                       ref
-                                       (write-to-string (cons id
-                                                              (read-from-string (dbm-get way-relation ref "()"))))))
-                           (relation-references expr))
+                 (for-each (lambda(ref-and-role)
+                             (let1 ref (car (assoc-ref ref-and-role 'ref))
+                               (dbm-put! way-relation
+                                         ref
+                                         (write-to-string (cons `((id . ,id)
+                                                                  (role . ,(car (assoc-ref ref-and-role 'role))))
+                                                                (read-from-string (dbm-get way-relation ref "()")))))))
+                           (relation-references-and-roles expr))
                  (dbm-put! relation
                            (number->string id)
                            (write-to-string (relation-without-members expr))))))

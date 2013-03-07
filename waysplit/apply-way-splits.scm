@@ -278,14 +278,16 @@
                                       (list (profile-way w)))))
                      (inc! num-in-ways)
                      ;; denormalize relations
-                     (for-each-with-index (lambda(idx r)
+                     (for-each-with-index (lambda(idx rid-and-role)
                                             (append! expr
-                                                     (map (lambda(t)
-                                                            (assert (eq? (car t) 'tag))
-                                                            (let1 oldkey (sxml:attr t 'k)
-                                                              (sxml:change-attr t (list 'k #`"rel[,|idx|]:,|oldkey|"))))
-                                                          ((sxpath '(tag))
-                                                           (read-from-string (dbm-get relation (number->string r)))))))
+                                                     (let1 rel (read-from-string (dbm-get relation (number->string (assoc-ref rid-and-role 'id))))
+                                                       (cons `(tag (@ (k ,#`"rel[,|idx|]:role")
+                                                                      (v ,(assoc-ref rid-and-role 'role))))
+                                                             (map (lambda(t)
+                                                                    (assert (eq? (car t) 'tag))
+                                                                    (let1 oldkey (sxml:attr t 'k)
+                                                                      (sxml:change-attr t (list 'k #`"rel[,|idx|][,|oldkey|]"))))
+                                                                  ((sxpath '(tag)) rel))))))
                                           (read-from-string (dbm-get way-relation (way-id expr) "()")))
                      
                      (let1 splits (read-from-string (dbm-get way-splits (sxml:attr expr 'id) "#f"))
