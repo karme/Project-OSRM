@@ -132,10 +132,11 @@ local function way_is_part_of_cycle_route(way)
    local i=0
    local rel_type
    while true do
-      -- todo: assumes all relations have a type tag
-      rel_type=way.tags:Find("rel["..i.."]:type")
+      -- note: assumes all denormalized relations have a non-empty type tag
+      -- at the moment the denormalization preprocessing filters for route types
+      rel_type=way.tags:Find("rel["..i.."][type]")
       if rel_type == '' then break end
-      if rel_type=='route' and way.tags:Find("rel["..i.."]:route")=='bicycle' then
+      if rel_type=='route' and way.tags:Find("rel["..i.."][route]")=='bicycle' then
          return true
       end
       i=i+1
