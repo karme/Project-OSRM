@@ -20,6 +20,7 @@
 ;;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ;;;
 
+(use util.list) ;; for assoc-ref
 (use sxml.adaptor) ;; for assert
 (use sxml.sxpath)
 (use sxml.tools)
