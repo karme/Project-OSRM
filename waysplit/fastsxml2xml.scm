@@ -38,7 +38,8 @@
 (use pipe)
 
 (define (main args)
-  (set-pipe-buffer-size! (current-output-port) (ash 1 20))
+  (guard (e [else #t])
+         (set-pipe-buffer-size! (current-output-port) (ash 1 20)))
   (print "<?xml version=\"1.0\" encoding=\"utf-8\"?>")
   (print "<osm version=\"0.6\" generator=\"fastsxml2sxml\">")
   (flush)
