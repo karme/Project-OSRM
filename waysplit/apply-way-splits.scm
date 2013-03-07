@@ -203,11 +203,12 @@
   ;;(sxml:add-attr expr (list 'z (number->string z)))
   (append expr `((tag (@ (k "z") (v ,(number->string z)))))))
 
+;; todo: limit output precision
 (define (polyline->string pl)
   (string-join (map (lambda(p) #`",(car p),,,(cadr p)") pl) " "))
 
 (define (way-add-profile expr pl-4d)
-  (let ((profile (map (cute permute <> '(3 2)) pl-4d))
+  (let ((profile (map (cute permute <> '(3 2)) pl-4d)) ;; todo: maybe apply douglas-peucker
         (way-length (number->string (last (last pl-4d)))))
     ;; (sxml:add-attr expr (list 'pl pl))
     (append expr `((tag (@ (k "profile") (v ,(polyline->string profile))))
