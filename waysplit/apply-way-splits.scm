@@ -265,7 +265,8 @@
                                                           (upsample-polyline->4d 'wgs84
                                                                                  (map (lambda(n)
                                                                                         (let1 p (node-pos-get n #f)
-                                                                                          (assert (list? p))
+                                                                                          ;; might fail if way references non-existing node
+                                                                                          (assert (and n (list? p)))
                                                                                           p))
                                                                                       (way-nodes w))
                                                                                  50))))
