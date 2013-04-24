@@ -37,7 +37,7 @@
 (use srfi-19)
 (use gauche.uvector)
 (use binary.io)
-(use elpro)
+(use elevation-profile)
 
 (define z (dem-stack->xy->z*))
 (define upsample-polyline->4d (get-upsample-polyline->4d z))
