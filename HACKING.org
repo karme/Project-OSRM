@@ -180,8 +180,8 @@ ExtractionContainers::PrepareData() now does various internal sorting and prepro
 - Write used nodes to a the .osrm file:
 
 s.a.
-[[file:Extractor/ExtractionContainers.cpp::fout.write]]
-[[file:DataStructures/ImportNode.h::struct%20_Node%20:%20NodeInfo{][file:DataStructures/ImportNode.h::struct _Node : NodeInfo{]]
+- [[file:Extractor/ExtractionContainers.cpp::fout.write]]
+- [[file:DataStructures/ImportNode.h::struct%20_Node%20:%20NodeInfo{][file:DataStructures/ImportNode.h::struct _Node : NodeInfo{]]
 
 ```
  | index | id | ... |    
