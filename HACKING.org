@@ -21,7 +21,6 @@ Suppose the following input data is processed by the Testbot profile:
 
 [[file:test.osm]]
 
-```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <osm generator="osrm-test" version="0.6">
   <node id="1" version="1" uid="1" user="osrm" timestamp="2000-00-00T00:00:00Z" lon="1.0026972038088113" lat="1.0">
@@ -69,7 +68,6 @@ Suppose the following input data is processed by the Testbot profile:
     <tag k="name" v="de"/>
   </way>
 </osm>
-```
 
 The data represents the following OSM nodes and ways:
 
