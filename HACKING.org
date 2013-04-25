@@ -19,6 +19,8 @@ The first step is to read the raw OSM data (in either PBF or XML format) and let
 *** Example Data
 Suppose the following input data is processed by the Testbot profile:
 
+[[file:test.osm]]
+
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <osm generator="osrm-test" version="0.6">
@@ -87,9 +89,13 @@ Ways:
 ```
 
 *** Parsing Nodes
-Each node is passed to the LUA node_function() as an ImportNode object. LUA inspects the OSM tags, and sets member variables on the ImportNode object, to indicate whether the node is a barrier, has signal penalty, etc.
+Each node is passed to the LUA [[file:profiles/testbot.lua::function%20node_function%20(node)][node_function()]] as an ImportNode
+object. LUA inspects the OSM tags, and sets member variables on the
+ImportNode object, to indicate whether the node is a barrier, has
+signal penalty, etc.
 
-When node_function() returns, ExtractorCallbacks::nodeFunction() adds the node to an STXXL disk vector stored in ExtractionContainer:
+When node_function() returns, ExtractorCallbacks::nodeFunction() adds
+the node to an STXXL disk vector stored in ExtractionContainer:
 
 ```
  | index | id |    
@@ -115,9 +121,13 @@ PBFParser::parseWay() first stores stores all ways in a local vector, with each 
  | 3     | 9  | 1,5      | # de 
 ```
 
-As with nodes, the ids are read from the input file and can be arbitrary.
+As with nodes, the ids are read from the input file and can be
+arbitrary.
 
-Each way is then passed to the LUA way_function() as an ExtractionWay object. LUA inspects the OSM tags, and sets member variables on the ExtractionWay object, to indicate whether the way is oneway, maxspeed, etc.
+Each way is then passed to the LUA way_function() as an ExtractionWay
+object. LUA inspects the OSM tags, and sets member variables on the
+ExtractionWay object, to indicate whether the way is oneway, maxspeed,
+etc.
 
 The Testbot profile returns the following ways in our example:
 
@@ -132,7 +142,10 @@ The Testbot profile returns the following ways in our example:
 
 ExtractorCallbacks::wayFunction() now splits the way into segments from node to node.
 
-If an ExtractionWay has different settings in the forward/backward direction, two InternalExtractorEdges are stored for each segment, each marked as oneway. If settings are the same in both directions, a single edge is stored, marked as bidirectional.
+If an ExtractionWay has different settings in the forward/backward
+direction, two InternalExtractorEdges are stored for each segment,
+each marked as oneway. If settings are the same in both directions, a
+single edge is stored, marked as bidirectional.
 
 In our example, the following edges result:
 
@@ -147,9 +160,12 @@ In our example, the following edges result:
  | 6     | 1             | 5              | bidirectional   | # de / ed
 ```
 
-In our example, way ce is a 'river', and has been split because the LUA script returns a different speed for each direction.
+In our example, way ce is a 'river', and has been split because the
+LUA script returns a different speed for each direction.
 
-Note that the node ids in the table refer to OSM ids, not vector indexes. The edges are stored an STXXL disk vector kept in ExtractionContainers.
+Note that the node ids in the table refer to OSM ids, not vector
+indexes. The edges are stored an STXXL disk vector kept in
+ExtractionContainers.
 
 ** Writing intermediate format
 ExtractionContainers::PrepareData() now does various internal sorting and preprocessing:
@@ -162,6 +178,10 @@ ExtractionContainers::PrepareData() now does various internal sorting and prepro
 - Sort restrictions in restrictionsVector by to, then fix ends.
 - Write restrictions to an .restrictions file.
 - Write used nodes to a the .osrm file:
+
+s.a.
+[[file:Extractor/ExtractionContainers.cpp::fout.write]]
+[[file:DataStructures/ImportNode.h::struct%20_Node%20:%20NodeInfo{][file:DataStructures/ImportNode.h::struct _Node : NodeInfo{]]
 
 ```
  | index | id | ... |    
@@ -176,6 +196,8 @@ ExtractionContainers::PrepareData() now does various internal sorting and prepro
 - Sort edges by start coord, and set start coord.
 - Sort edges by target coord, and set target coord, distance and weight, and convert direction to 0 (bidirectional) or 1 (oneway).
 - Write (append) edges to the .osrm file:
+
+[[file:Extractor/ExtractionContainers.cpp::fout.write]]
 
 ```
  | index | start node id | target node id | direction | ... |  
