@@ -135,11 +135,11 @@
 
 (define (calculate-start r)
   (apply vec-lerp (append (start-segment r)
-                          (list (ref (assoc-ref r "ratios") 0)))))
+                          (list (ref (assoc-ref r "phantomratios") 0)))))
 
 (define (calculate-end r)
   (apply vec-lerp (append (end-segment r)
-                          (list (ref (assoc-ref r "ratios") 1)))))
+                          (list (ref (assoc-ref r "phantomratios") 1)))))
 
 (define (start-point r)
   (let1 p (ref (assoc-ref r "via_points") 0)
@@ -245,11 +245,11 @@
            (start-linref (list (start-way-id r)
                                (linref (way-geometry (start-way-id r) 0 1)
                                        (start-segment r)
-                                       (ref (assoc-ref r "ratios") 0))))
+                                       (ref (assoc-ref r "phantomratios") 0))))
            (end-linref (list (end-way-id r)
                              (linref (way-geometry (end-way-id r) 0 1)
                                      (end-segment r)
-                                     (ref (assoc-ref r "ratios") 1)))))
+                                     (ref (assoc-ref r "phantomratios") 1)))))
       (assert (< (apply max (append (map (compose abs -) (calculate-start r) (start-point r))
                                     (map (compose abs -) (calculate-end r)   (end-point r))))
                  2e-5))
