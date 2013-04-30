@@ -6,10 +6,19 @@
 -- Secondary road:	18km/h = 18000m/3600s = 100m/20s
 -- Tertiary road:	12km/h = 12000m/3600s = 100m/30s
 
+-- modes:
+-- 1: normal
+-- 2: route
+-- 3: river downstream
+-- 4: river upstream
+-- 5: steps down
+-- 6: steps up
+
 speed_profile = { 
 	["primary"] = 36,
 	["secondary"] = 18,
 	["tertiary"] = 12,
+	["steps"] = 6,
 	["default"] = 24
 }
 
@@ -22,6 +31,14 @@ use_restrictions 		= true
 ignore_areas 			= true	-- future feature
 traffic_signal_penalty 	= 7		-- seconds
 u_turn_penalty 			= 20
+
+modes = { "bot", "ferry", "downstream", "upstream" }
+
+function get_modes(vector)
+	for i,v in ipairs(modes) do 
+		vector:Add(v)
+	end
+end
 
 function limit_speed(speed, limits)
     -- don't use ipairs(), since it stops at the first nil value
@@ -56,52 +73,29 @@ function way_function (way)
     local maxspeed_forward = tonumber(way.tags:Find( "maxspeed:forward"))
     local maxspeed_backward = tonumber(way.tags:Find( "maxspeed:backward"))
 	
-	way.name = name
+	way.name = ''..way.id
 
-  	if route ~= nil and durationIsValid(duration) then
-		way.duration = math.max( 1, parseDuration(duration) )
-	else
-	    local speed_forw = speed_profile[highway] or speed_profile['default']
-	    local speed_back = speed_forw
-
-    	if highway == "river" then
-    		local temp_speed = speed_forw;
-    		speed_forw = temp_speed*1.5
-    		speed_back = temp_speed/1.5
-   	end
-            	
-        if maxspeed_forward ~= nil and maxspeed_forward > 0 then
-			speed_forw = maxspeed_forward
-		else
-			if maxspeed ~= nil and maxspeed > 0 and speed_forw > maxspeed then
-				speed_forw = maxspeed
-			end
-		end
-		
-		if maxspeed_backward ~= nil and maxspeed_backward > 0 then
-			speed_back = maxspeed_backward
-		else
-			if maxspeed ~=nil and maxspeed > 0 and speed_back > maxspeed then
-				speed_back = maxspeed
-			end
-		end
-        
-        way.speed = speed_forw
-        if speed_back ~= way_forw then
-            way.backward_speed = speed_back
-        end
-	end
-	
-	if oneway == "no" or oneway == "0" or oneway == "false" then
-		way.direction = Way.bidirectional
+	if oneway == "yes" or oneway == "1" or oneway == "true" then
+       -- print("found oneway id: "..way.id)
+       way.forward.speed = 1.0
+       way.backward.speed = 0.0
 	elseif oneway == "-1" then
-		way.direction = Way.opposite
-	elseif oneway == "yes" or oneway == "1" or oneway == "true" then
-		way.direction = Way.oneway
-	else
-		way.direction = Way.bidirectional
-	end
-	
-	way.type = 1
+       way.forward.speed = 0.0
+       way.backward.speed = 1.0
+    else
+       way.forward.speed = 1.0
+       way.backward.speed = 1.0
+    end
+
+    if way.forward.speed > 0 then
+       way.forward.mode = 1
+    else
+       way.forward.mode = 0
+    end
+    if way.backward.speed > 0 then
+       way.backward.mode = 2
+    else
+       way.backward.mode = 0
+    end
 	return 1
 end

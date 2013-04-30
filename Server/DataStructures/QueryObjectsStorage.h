@@ -26,8 +26,6 @@ or see http://www.gnu.org/licenses/agpl.txt.
 #include<string>
 
 #include "../../DataStructures/NodeInformationHelpDesk.h"
-#include "../../DataStructures/QueryEdge.h"
-#include "../../DataStructures/StaticGraph.h"
 
 struct QueryObjectsStorage {
     typedef StaticGraph<QueryEdge::EdgeData> QueryGraph;

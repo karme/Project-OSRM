@@ -292,12 +292,11 @@ inline void PBFParser::parseRelation(_ThreadData * threadData) {
 }
 
 inline void PBFParser::parseWay(_ThreadData * threadData) {
-	ExtractionWay w;
 	std::vector<ExtractionWay> waysToParse;
 	const int number_of_ways = threadData->PBFprimitiveBlock.primitivegroup( threadData->currentGroupID ).ways_size();
 	waysToParse.reserve(number_of_ways);
 	for(int i = 0; i < number_of_ways; ++i) {
-		w.Clear();
+		ExtractionWay w;
 		const OSMPBF::Way& inputWay = threadData->PBFprimitiveBlock.primitivegroup( threadData->currentGroupID ).ways( i );
 		w.id = inputWay.id();
 		unsigned pathNode(0);
@@ -319,7 +318,7 @@ inline void PBFParser::parseWay(_ThreadData * threadData) {
 #pragma omp parallel for schedule ( guided )
 	for(int i = 0; i < number_of_ways; ++i) {
 	    ExtractionWay & w = waysToParse[i];
-	    ParseWayInLua( w, scriptingEnvironment.getLuaStateForThreadID(omp_get_thread_num()) );
+	    ParseWayInLua( w, scriptingEnvironment.getLuaStateForThreadID(omp_get_thread_num()) );        
 	}
 
 	BOOST_FOREACH(ExtractionWay & w, waysToParse) {

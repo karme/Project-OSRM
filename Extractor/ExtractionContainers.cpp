@@ -231,9 +231,6 @@ void ExtractionContainers::PrepareData(const std::string & outputFileName, const
                     fout.write((char*)&edgeIT->target, sizeof(unsigned));
                     fout.write((char*)&intDist, sizeof(int));
                     switch(edgeIT->direction) {
-                    case ExtractionWay::notSure:
-                        fout.write((char*)&zero, sizeof(short));
-                        break;
                     case ExtractionWay::oneway:
                         fout.write((char*)&one, sizeof(short));
                         break;
@@ -250,13 +247,11 @@ void ExtractionContainers::PrepareData(const std::string & outputFileName, const
                         break;
                     }
                     fout.write((char*)&intWeight, sizeof(int));
-                    assert(edgeIT->type >= 0);
-                    fout.write((char*)&edgeIT->type, sizeof(short));
                     fout.write((char*)&edgeIT->nameID, sizeof(unsigned));
                     fout.write((char*)&edgeIT->isRoundabout, sizeof(bool));
                     fout.write((char*)&edgeIT->ignoreInGrid, sizeof(bool));
                     fout.write((char*)&edgeIT->isAccessRestricted, sizeof(bool));
-                    fout.write((char*)&edgeIT->isContraFlow, sizeof(bool));
+                    fout.write((char*)&edgeIT->mode, sizeof(unsigned char));
                 }
                 ++usedEdgeCounter;
                 ++edgeIT;
@@ -264,6 +259,8 @@ void ExtractionContainers::PrepareData(const std::string & outputFileName, const
         }
         std::cout << "ok, after " << get_timestamp() - time << "s" << std::endl;
         std::cout << "[extractor] setting number of edges   ... " << std::flush;
+
+        std::cout << "[extractor]  number of edges:    " << usedEdgeCounter << std::flush;
 
         fout.seekp(positionInFile);
         fout.write((char*)&usedEdgeCounter, sizeof(unsigned));

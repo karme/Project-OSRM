@@ -70,10 +70,9 @@ EdgeBasedGraphFactory::EdgeBasedGraphFactory(int nodes, std::vector<NodeBasedEdg
         edge.data.roundabout = i->isRoundabout();
         edge.data.ignoreInGrid = i->ignoreInGrid();
         edge.data.nameID = i->name();
-        edge.data.type = i->type();
         edge.data.isAccessRestricted = i->isAccessRestricted();
         edge.data.edgeBasedNodeID = edges.size();
-        edge.data.contraFlow = i->isContraFlow();
+        edge.data.mode = i->mode();
         edges.push_back( edge );
         if( edge.data.backward ) {
             std::swap( edge.source, edge.target );
@@ -147,6 +146,7 @@ void EdgeBasedGraphFactory::InsertEdgeBasedNode(
     currentNode.id = data.edgeBasedNodeID;
     currentNode.ignoreInGrid = data.ignoreInGrid;
     currentNode.weight = data.distance;
+    currentNode.mode = data.mode;
     edgeBasedNodes.push_back(currentNode);
 }
 
@@ -221,13 +221,11 @@ void EdgeBasedGraphFactory::Run(const char * originalEdgeDataFilename, lua_State
         for(_NodeBasedDynamicGraph::EdgeIterator e1 = _nodeBasedGraph->BeginEdges(u); e1 < _nodeBasedGraph->EndEdges(u); ++e1) {
             _NodeBasedDynamicGraph::NodeIterator v = _nodeBasedGraph->GetTarget(e1);
 
-            if(_nodeBasedGraph->GetEdgeData(e1).type != SHRT_MAX) {
-                assert(e1 != UINT_MAX);
-                assert(u != UINT_MAX);
-                assert(v != UINT_MAX);
-                //edges that end on bollard nodes may actually be in two distinct components
-                InsertEdgeBasedNode(e1, u, v, (std::min(vectorOfComponentSizes[componentsIndex[u]], vectorOfComponentSizes[componentsIndex[v]]) < 1000) );
-            }
+            assert(e1 != UINT_MAX);
+            assert(u != UINT_MAX);
+            assert(v != UINT_MAX);
+            //edges that end on bollard nodes may actually be in two distinct components
+            InsertEdgeBasedNode(e1, u, v, (std::min(vectorOfComponentSizes[componentsIndex[u]], vectorOfComponentSizes[componentsIndex[v]]) < 1000) );
         }
     }
 
@@ -274,6 +272,7 @@ void EdgeBasedGraphFactory::Run(const char * originalEdgeDataFilename, lua_State
                             distance += speedProfile.trafficSignalPenalty;
                         }
                         unsigned penalty = 0;
+                        
                         TurnInstruction turnInstruction = AnalyzeTurn(u, v, w, penalty, myLuaState);
                         if(turnInstruction == TurnInstructions.UTurn)
                             distance += speedProfile.uTurnPenalty;
@@ -283,11 +282,10 @@ void EdgeBasedGraphFactory::Run(const char * originalEdgeDataFilename, lua_State
 //                        }
                         distance += penalty;
 						
-
                         //distance += heightPenalty;
                         //distance += ComputeTurnPenalty(u, v, w);
                         assert(edgeData1.edgeBasedNodeID != edgeData2.edgeBasedNodeID);
-                        OriginalEdgeData oed(v,edgeData2.nameID, turnInstruction);
+                        OriginalEdgeData oed(v,edgeData2.nameID, turnInstruction, edgeData2.mode);
                         original_edge_data_vector.push_back(oed);
                         ++numberOfOriginalEdges;
 
@@ -351,13 +349,6 @@ TurnInstruction EdgeBasedGraphFactory::AnalyzeTurn(const NodeID u, const NodeID 
     _NodeBasedDynamicGraph::EdgeData & data1 = _nodeBasedGraph->GetEdgeData(edge1);
     _NodeBasedDynamicGraph::EdgeData & data2 = _nodeBasedGraph->GetEdgeData(edge2);
 
-    if(!data1.contraFlow && data2.contraFlow) {
-    	return TurnInstructions.EnterAgainstAllowedDirection;
-    }
-    if(data1.contraFlow && !data2.contraFlow) {
-    	return TurnInstructions.LeaveAgainstAllowedDirection;
-    }
-
     //roundabouts need to be handled explicitely
     if(data1.roundabout && data2.roundabout) {
         //Is a turn possible? If yes, we stay on the roundabout!
@@ -379,8 +370,8 @@ TurnInstruction EdgeBasedGraphFactory::AnalyzeTurn(const NodeID u, const NodeID 
         }
     }
 
-    //If street names stay the same and if we are certain that it is not a roundabout, we skip it.
-    if( (data1.nameID == data2.nameID) && (0 != data1.nameID)) {
+    //If street names and modes stay the same and if we are certain that it is not a roundabout, we skip it.
+    if( (data1.nameID == data2.nameID) && (data1.mode == data2.mode) && (0 != data1.nameID)) {
         return TurnInstructions.NoTurn;
     }
     if( (data1.nameID == data2.nameID) && (0 == data1.nameID) && (_nodeBasedGraph->GetOutDegree(v) <= 2) ) {

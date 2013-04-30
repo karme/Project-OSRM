@@ -168,6 +168,7 @@ public:
             //merge edges (s,t) and (t,s) into bidirectional edge
             if ( forwardEdge.data.distance == backwardEdge.data.distance ) {
                 if ( (int)forwardEdge.data.distance != std::numeric_limits< int >::max() ) {
+                    assert(0);
                     forwardEdge.data.backward = true;
                     edges[edge++] = forwardEdge;
                 }

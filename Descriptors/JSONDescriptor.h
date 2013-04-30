@@ -109,6 +109,38 @@ public:
             }
         }
         reply.content += "],";
+        {
+            reply.content += "\"segments\":[";
+            reply.content += "[\"";
+            reply.content += sEngine.GetEscapedNameForNameID(phantomNodes.startPhantom.nodeBasedEdgeNameID);
+            reply.content += "\",";
+            reply.content += boost::lexical_cast<std::string>(int(phantomNodes.startPhantom.mode1));
+            reply.content += "]";
+            BOOST_FOREACH(const _PathData & pathData, rawRoute.computedShortestPath) {
+                reply.content += ",[\"";
+                reply.content += sEngine.GetEscapedNameForNameID(pathData.nameID);
+                reply.content += "\",";
+                reply.content += boost::lexical_cast<std::string>(int(pathData.mode));
+                reply.content += "]";
+            }
+            reply.content += "],";
+            reply.content += "\"phantomsegments\":";
+            {
+                PolylineCompressor pc;
+                std::vector<_Coordinate> v;
+                v.push_back(phantomNodes.startPhantom.segmentStart);
+                v.push_back(phantomNodes.startPhantom.segmentEnd);
+                v.push_back(phantomNodes.targetPhantom.segmentStart);
+                v.push_back(phantomNodes.targetPhantom.segmentEnd);
+                pc.printUnencodedString(v, reply.content);
+            }
+            reply.content += ",";
+        }
+        reply.content += "\"phantomratios\":[";
+        reply.content += boost::lexical_cast<std::string>(phantomNodes.startPhantom.ratio);
+        reply.content += ",";
+        reply.content += boost::lexical_cast<std::string>(phantomNodes.targetPhantom.ratio);
+        reply.content += "],";
         descriptionFactory.BuildRouteSummary(descriptionFactory.entireLength, rawRoute.lengthOfShortestPath - ( numberOfEnteredRestrictedAreas*TurnInstructions.AccessRestrictionPenalty));
 
         reply.content += "\"route_summary\":";
@@ -312,7 +344,7 @@ public:
         unsigned prefixSumOfNecessarySegments = 0;
         roundAbout.leaveAtExit = 0;
         roundAbout.nameID = 0;
-        std::string tmpDist, tmpLength, tmpDuration, tmpBearing, tmpInstruction;
+        std::string tmpDist, tmpLength, tmpDuration, tmpBearing, tmpInstruction, tmpMode;
         //Fetch data from Factory and generate a string from it.
         BOOST_FOREACH(const SegmentInformation & segment, descriptionFactory.pathDescription) {
         	TurnInstruction currentInstruction = segment.turnInstruction & TurnInstructions.InverseAccessRestrictionFlag;
@@ -358,6 +390,11 @@ public:
                     reply.content += "\",";
                     intToString(round(segment.bearing), tmpBearing);
                     reply.content += tmpBearing;
+                    
+                    reply.content += ",";
+                    intToString(segment.mode, tmpMode);
+                    reply.content += tmpMode;
+                    
                     reply.content += "]";
 
                     segmentVector.push_back( Segment(segment.nameID, segment.length, segmentVector.size() ));

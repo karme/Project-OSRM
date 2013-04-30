@@ -77,6 +77,7 @@ public:
         NodeID nameID;
         unsigned weight:31;
         bool ignoreInGrid:1;
+        TravelMode mode;
     };
 
     struct SpeedProfileProperties{
@@ -91,14 +92,13 @@ private:
         int distance;
         unsigned edgeBasedNodeID;
         unsigned nameID;
-        short type;
         bool isAccessRestricted:1;
         bool shortcut:1;
         bool forward:1;
         bool backward:1;
         bool roundabout:1;
         bool ignoreInGrid:1;
-        bool contraFlow:1;
+        TravelMode mode;
     };
 
     struct _EdgeBasedEdgeData {
@@ -108,6 +108,7 @@ private:
         bool forward;
         bool backward;
         TurnInstruction turnInstruction;
+        TravelMode mode;
     };
 
     typedef DynamicGraph< _NodeBasedEdgeData > _NodeBasedDynamicGraph;

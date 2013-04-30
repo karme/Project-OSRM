@@ -98,23 +98,22 @@ NodeID readBinaryOSRMGraphFromStream(std::istream &in, std::vector<EdgeT>& edgeL
 
     edgeList.reserve(m);
     EdgeWeight weight;
-    short type;
     NodeID nameID;
     int length;
-    bool isRoundabout, ignoreInGrid, isAccessRestricted, isContraFlow;
-
+    bool isRoundabout, ignoreInGrid, isAccessRestricted;
+    TravelMode mode;
+    
     for (EdgeID i=0; i<m; ++i) {
         in.read((char*)&source,             sizeof(unsigned));
         in.read((char*)&target,             sizeof(unsigned));
         in.read((char*)&length,             sizeof(int));
         in.read((char*)&dir,                sizeof(short));
         in.read((char*)&weight,             sizeof(int));
-        in.read((char*)&type,               sizeof(short));
         in.read((char*)&nameID,             sizeof(unsigned));
         in.read((char*)&isRoundabout,       sizeof(bool));
         in.read((char*)&ignoreInGrid,       sizeof(bool));
         in.read((char*)&isAccessRestricted, sizeof(bool));
-        in.read((char*)&isContraFlow,       sizeof(bool));
+        in.read((char*)&mode,               sizeof(TravelMode));
 
         GUARANTEE(length > 0, "loaded null length edge" );
         GUARANTEE(weight > 0, "loaded null weight");
@@ -124,8 +123,6 @@ NodeID readBinaryOSRMGraphFromStream(std::istream &in, std::vector<EdgeT>& edgeL
         bool backward = true;
         if (1 == dir) { backward = false; }
         if (2 == dir) { forward = false; }
-
-        assert(type >= 0);
 
         //         translate the external NodeIDs to internal IDs
         ExternalNodeMap::iterator intNodeID = ext2IntNodeMap.find(source);
@@ -150,8 +147,8 @@ NodeID readBinaryOSRMGraphFromStream(std::istream &in, std::vector<EdgeT>& edgeL
             std::swap(source, target);
             std::swap(forward, backward);
         }
-
-        EdgeT inputEdge(source, target, nameID, weight, forward, backward, type, isRoundabout, ignoreInGrid, isAccessRestricted, isContraFlow );
+        
+        EdgeT inputEdge(source, target, nameID, weight, forward, backward, isRoundabout, ignoreInGrid, isAccessRestricted, mode );
         edgeList.push_back(inputEdge);
     }
     std::sort(edgeList.begin(), edgeList.end());
@@ -211,7 +208,6 @@ NodeID readDTMPGraphFromStream(std::istream &in, std::vector<EdgeT>& edgeList, s
     for (EdgeID i=0; i<m; ++i) {
         EdgeWeight weight;
         unsigned speedType(0);
-        short type(0);
         // NodeID nameID;
         int length;
         in >> source >> target >> length >> dir >> speedType;
@@ -295,7 +291,7 @@ NodeID readDTMPGraphFromStream(std::istream &in, std::vector<EdgeT>& edgeList, s
 
         if(source == UINT_MAX || target == UINT_MAX) { ERR("nonexisting source or target" ); }
 
-        EdgeT inputEdge(source, target, 0, weight, forward, backward, type );
+        EdgeT inputEdge(source, target, 0, weight, forward, backward );
         edgeList.push_back(inputEdge);
     }
     ext2IntNodeMap.clear();
@@ -367,7 +363,6 @@ unsigned readHSGRFromStream(std::istream &in, std::vector<NodeT>& nodeList, std:
     in.read((char*) &numberOfEdges, sizeof(unsigned));
     edgeList.resize(numberOfEdges);
     in.read((char*) &(edgeList[0]), numberOfEdges*sizeof(EdgeT));
-
     return numberOfNodes;
 }
 
