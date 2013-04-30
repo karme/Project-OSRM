@@ -73,54 +73,29 @@ function way_function (way)
     local maxspeed_forward = tonumber(way.tags:Find( "maxspeed:forward"))
     local maxspeed_backward = tonumber(way.tags:Find( "maxspeed:backward"))
 	
-	way.name = name
+	way.name = ''..way.id
 
-  	if route ~= nil and durationIsValid(duration) then
-		way.duration = math.max( 1, parseDuration(duration) )
-    	way.forward.mode = 2
-    	way.backward.mode = 2
-	else
-	    local speed = speed_profile[highway] or speed_profile['default']
+	if oneway == "yes" or oneway == "1" or oneway == "true" then
+       -- print("found oneway id: "..way.id)
+       way.forward.speed = 1.0
+       way.backward.speed = 0.0
+	elseif oneway == "-1" then
+       way.forward.speed = 0.0
+       way.backward.speed = 1.0
+    else
+       way.forward.speed = 1.0
+       way.backward.speed = 1.0
+    end
 
-    	if highway == "river" then
-        	way.forward.mode = 3
-        	way.backward.mode = 4
-    		way.forward.speed = speed*1.5
-    		way.backward.speed = speed/1.5
-        else
-        	if highway == "steps" then
-            	way.forward.mode = 5
-            	way.backward.mode = 6
-       	    else
-        		way.forward.mode = 1
-            	way.backward.mode = 1
-        	end
-            way.forward.speed = speed
-    		way.backward.speed = speed
-   	    end
-            	
-        if maxspeed_forward ~= nil and maxspeed_forward > 0 then
-			way.forward.speed = maxspeed_forward
-		else
-			if maxspeed ~= nil and maxspeed > 0 and way.forward.speed > maxspeed then
-				way.forward.speed = maxspeed
-			end
-		end
-		
-		if maxspeed_backward ~= nil and maxspeed_backward > 0 then
-			way.backward.speed = maxspeed_backward
-		else
-			if maxspeed ~=nil and maxspeed > 0 and way.backward.speed > maxspeed then
-				way.backward.speed = maxspeed
-			end
-		end  
-	end
-	
-	if oneway == "-1" then
-		way.forward.mode = 0
-	elseif oneway == "yes" or oneway == "1" or oneway == "true" then
-		way.backward.mode = 0
-	end
-	
+    if way.forward.speed > 0 then
+       way.forward.mode = 1
+    else
+       way.forward.mode = 0
+    end
+    if way.backward.speed > 0 then
+       way.backward.mode = 2
+    else
+       way.backward.mode = 0
+    end
 	return 1
 end
