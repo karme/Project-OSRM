@@ -1,5 +1,6 @@
 require("lib/access")
 require("lib/maxspeed")
+require("lib/elevation")
 
 -- Begin of globals
 barrier_whitelist = { [""] = true, ["cycle_barrier"] = true, ["bollard"] = true, ["entrance"] = true, ["cattle_grid"] = true, ["border_control"] = true, ["toll_booth"] = true, ["sally_port"] = true, ["gate"] = true, ["no"] = true}
@@ -135,6 +136,59 @@ function node_function (node)
 	end
 	
 	return true
+end
+
+local function print_way(way)
+    local r=''
+    for k,v in pairs({'speed','backward_speed','direction','duration','name','ignore_in_grid','is_access_restricted','roundabout'}) do
+       r=r..v..'='
+       if type(way[v])=='boolean' then
+          r=r..(way[v] and 'true' or 'false')
+       elseif v=='direction' then
+          r=r..((way[v]==Way.bidirectional and 'bidirectional') or (way[v]==Way.oneway and 'oneway') or (way[v]==Way.opposite and 'oneway reverse') or 'bug!')
+       else
+          r=r..way[v]
+       end
+       r=r..' '
+    end
+    print(r)
+end
+
+local function way_is_part_of_cycle_route(way, forwardp)
+   local i=0
+   local rel_type
+   while true do
+      -- note: assumes all denormalized relations have a non-empty type tag
+      -- at the moment the denormalization preprocessing filters for route types
+      rel_type=way.tags:Find("rel["..i.."][type]")
+      if rel_type == '' then break end
+      if rel_type=='route' and way.tags:Find("rel["..i.."][route]")=='bicycle' then
+         local role=way.tags:Find("rel["..i.."]:role")
+         if role == '' or ((fowardp and role=='forward')) or ((not forwardp) and role=='backward') then
+            return true
+         end
+      end
+      i=i+1
+   end
+   return false
+end
+
+local function way_is_cycleway(way, forwardp)
+   local cycleway = way.tags:Find("cycleway")
+   local cycleway_left = way.tags:Find("cycleway:left")
+   local cycleway_right = way.tags:Find("cycleway:right")
+   return (cycleway and cycleway_tags[cycleway]) or (forwardp and cycleway_right and cycleway_tags[cycleway_right]) or ((not forwardp) and cycleway_left and cycleway_tags[cycleway_left]) or way_is_part_of_cycle_route(way,forwardp)
+end
+
+local function scale_way_speeds(way, fwd, bwd)
+   local cspeed_fwd=way.forward.speed
+   local cspeed_bwd=way.backward.speed
+   if cspeed_fwd > 0 then
+      way.forward.speed = cspeed_fwd * fwd
+   end
+   if cspeed_bwd > 0 then
+      way.backward.speed = cspeed_bwd * bwd
+   end
 end
 
 function way_function (way)
@@ -314,25 +368,34 @@ function way_function (way)
     end
 	
 	-- cycleway speed
-	if cycleway_tags[cycleway_right] then
-		way.forward.speed = bicycle_speeds["cycleway"]
-	elseif cycleway_tags[cycleway] then
+    if way_is_cycleway(way, true) then
 		way.forward.speed = bicycle_speeds["cycleway"]
     end
-	if cycleway_tags[cycleway_left] then
-		way.backward.speed = bicycle_speeds["cycleway"]
-    elseif cycleway_tags[cycleway] then
+    if way_is_cycleway(way, false) then
 		way.backward.speed = bicycle_speeds["cycleway"]
 	end
-    
+
     -- surfaces
     if surface_speeds[surface] then
         way.forward.speed = math.min(way.forward.speed, surface_speeds[surface])
         way.backward.speed  = math.min(way.backward.speed, surface_speeds[surface])
     end
 
+    -- elevation
+    local elevation_profile = Elevation.parse_profile(way.tags:Find("profile"))
+    if elevation_profile then
+       local speed_scale_fwd, speed_scale_bwd = Elevation.speed_scales(elevation_profile)
+       scale_way_speeds(way, speed_scale_fwd, speed_scale_bwd)
+    end
+
 	-- maxspeed
     MaxSpeed.limit( way, maxspeed, maxspeed_forward, maxspeed_backward )
+
+    -- prefer cycle ways
+    -- note: we adjust the cost function here / not the time/speed function
+    if way_is_cycleway(way) then
+       scale_way_speeds(way, 2, 2)
+    end
     	
 	return true
 end
