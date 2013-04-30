@@ -101,6 +101,13 @@ bool NNGrid::FindPhantomNodeForCoordinate( const _Coordinate & location, Phantom
         resultNode.weight2 *= (1.-ratio);
     }
     resultNode.ratio = ratio;
+    resultNode.segmentStart.lon = smallestEdge.startCoord.lon;
+    resultNode.segmentStart.lat = round(100000.*(y2lat(static_cast<double>(smallestEdge.startCoord.lat)/100000.)));
+    resultNode.segmentEnd.lon = smallestEdge.targetCoord.lon;
+    resultNode.segmentEnd.lat = round(100000.*(y2lat(static_cast<double>(smallestEdge.targetCoord.lat)/100000.)));
+    // INFO(resultNode.segmentStart);
+    // INFO(resultNode.segmentEnd);
+
 //        INFO("start: " << edgeStartCoord << ", end: " << edgeEndCoord);
 //        INFO("selected node: " << resultNode.edgeBasedNode << ", bidirected: " << (resultNode.isBidirected() ? "yes" : "no"));
 //        INFO("New weight1: " << resultNode.weight1 << ", new weight2: " << resultNode.weight2 << ", ratio: " << ratio);

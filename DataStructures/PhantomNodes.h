@@ -34,6 +34,8 @@ struct PhantomNode {
     TravelMode mode1;
     TravelMode mode2;
     _Coordinate location;
+    _Coordinate segmentStart;
+    _Coordinate segmentEnd;
     void Reset() {
         edgeBasedNode = UINT_MAX;
         nodeBasedEdgeNameID = UINT_MAX;
