@@ -97,10 +97,12 @@ turn_bias               = 1.4
 -- End of globals
 
 --modes
-mode_normal = 1
-mode_pushing = 2
-mode_ferry = 3
-mode_train = 4
+-- note: lowest bit is used for direction
+mode_bit_forward = 1
+mode_normal = 2
+mode_pushing = 4
+mode_ferry = 6
+mode_train = 8
 
     
 function get_exceptions(vector)
@@ -135,6 +137,13 @@ function node_function (node)
 	end
 	
 	return true
+end
+
+-- argh: no bitwise operators (bit32 in lua 5.2 only)
+function set_lowest_bit(i,b)
+   assert((b==0) or (b==1))
+   -- no bitshift and no integer division in lua 5.1 :(
+   return (math.floor(i/2)*2)+b
 end
 
 function way_function (way)
@@ -333,7 +342,15 @@ function way_function (way)
 
 	-- maxspeed
     MaxSpeed.limit( way, maxspeed, maxspeed_forward, maxspeed_backward )
-    	
+
+    -- adjust mode for direction
+    if way.forward.mode > 0 then
+       way.forward.mode = set_lowest_bit(way.forward.mode, 1)
+    end
+    if way.backward.mode > 0 then
+       way.backward.mode = set_lowest_bit(way.backward.mode, 0)
+       assert (way.backward.mode > 0)
+    end
 	return true
 end
 
