@@ -67,6 +67,7 @@ ScriptingEnvironment::ScriptingEnvironment(const char * fileName) {
         luabind::module(myLuaState) [
                                      luabind::class_<ExtractionWay>("Way")
                                      .def(luabind::constructor<>())
+                                     .def_readwrite("id", &ExtractionWay::id) // todo: read-only?!
                                      .def_readwrite("name", &ExtractionWay::name)
                                      .def_readwrite("duration", &ExtractionWay::duration)
                                      .def_readwrite("access", &ExtractionWay::access)
