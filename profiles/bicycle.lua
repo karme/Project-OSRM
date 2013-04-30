@@ -198,16 +198,7 @@ function way_function (way)
 	local foot_backward = way.tags:Find("foot:backward")
 
 	-- name	
-	if "" ~= ref and "" ~= name then
-		way.name = name .. ' / ' .. ref
-    elseif "" ~= ref then
-    	way.name = ref
-	elseif "" ~= name then
-		way.name = name
-	else
-		way.name = "{highway:"..highway.."}"	-- if no name exists, use way type
-		                                        -- this encoding scheme is excepted to be a temporary solution
-	end
+    way.name = ''..way.id
 		
 	way.mode = mode_normal
 	
