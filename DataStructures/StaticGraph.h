@@ -76,6 +76,8 @@ public:
                 _edges[i].target = graph[edge].target;
                 _edges[i].data = graph[edge].data;
                 assert(_edges[i].data.distance > 0);
+                // note: directed edges!
+                assert(_edges[i].data.forward=!_edges[i].data.backward);
                 edge++;
             }
         }
