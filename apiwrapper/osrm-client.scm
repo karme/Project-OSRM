@@ -59,7 +59,7 @@
           (request-uri (cadr service))
           (params (append params
                           (points->parameters points)
-                          '((instructions false)
+                          '((instructions true)
                             (compression false)
                             (alt false)))))
       (receive (status headers body)
