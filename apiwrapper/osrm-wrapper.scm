@@ -26,7 +26,7 @@
   (use sxml.adaptor) ;; for assert macro
   (use partial-route)
   (use google-directions)
-  (use elpro-client)
+  (use elevation-profile-client)
   (use www.fastcgi)
   (use routing)
   (use osrm-client)
