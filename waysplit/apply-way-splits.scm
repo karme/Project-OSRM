@@ -205,14 +205,18 @@
 
 ;; todo: limit output precision
 (define (polyline->string pl)
-  (string-join (map (lambda(p) #`",(car p),,,(cadr p)") pl) " "))
+  (string-join (map (lambda(p)
+                      (string-join (map number->string p) ","))
+                    pl)
+               " "))
 
-(define (way-add-profile expr pl-4d)
+(define (way-add-geometry expr pl-4d)
   (let ((profile (map (cute permute <> '(3 2)) pl-4d)) ;; todo: maybe apply douglas-peucker
         (way-length (number->string (last (last pl-4d)))))
     ;; (sxml:add-attr expr (list 'pl pl))
     (append expr `((tag (@ (k "profile") (v ,(polyline->string profile))))
-                   (tag (@ (k "length") (v ,way-length)))))))
+                   (tag (@ (k "length") (v ,way-length)))
+                   (tag (@ (k "geometry") (v ,(polyline->string pl-4d))))))))
 
 (define (main args)
   (let-optionals* (cdr args) ((output-format "parallel-pipe")
@@ -261,15 +265,15 @@
 			  (list)])]
                   [(way)
                    (let* ((profile-way (lambda(w)
-                                         (way-add-profile w
-                                                          (upsample-polyline->4d 'wgs84
-                                                                                 (map (lambda(n)
-                                                                                        (let1 p (node-pos-get n #f)
-                                                                                          ;; might fail if way references non-existing node
-                                                                                          (assert (and n (list? p)))
-                                                                                          p))
-                                                                                      (way-nodes w))
-                                                                                 50))))
+                                         (way-add-geometry w
+                                                           (upsample-polyline->4d 'wgs84
+                                                                                  (map (lambda(n)
+                                                                                         (let1 p (node-pos-get n #f)
+                                                                                           ;; might fail if way references non-existing node
+                                                                                           (assert (and n (list? p)))
+                                                                                           p))
+                                                                                       (way-nodes w))
+                                                                                  50))))
                           (split-way (lambda(l)
                                        (assert (list? l))
                                        (inc! num-way-splits)
