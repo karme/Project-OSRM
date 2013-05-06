@@ -30,6 +30,7 @@
   (use www.fastcgi)
   (use routing)
   (use osrm-client)
+  (use dbm.gdbm)
   (export wrap-osrm-main))
 
 (select-module osrm-wrapper)
@@ -37,22 +38,264 @@
 (define (s->min x)
   (/. x 60))
 
+(define (instructions->way-list i)
+  (map (lambda(x)
+         #?=(list (string->number (ref x 1)) (odd? (ref x 8)) (ref x 2)))
+       i))
+
+;; todo: i already have a better implementation somewhere?!
+(define (reverse-polyline-4d pl)
+  (if (< (size-of pl) 2)
+    pl
+    (reverse (fold2 (lambda(n1 n2 o1 o2)
+                      (values (cons (append n1 (list (+ o2 n2))) o1)
+                              (+ o2 n2)))
+                    '()
+                    0
+                    (fold (lambda(n o) (cons (permute n '(0 1 2)) o)) '() pl)
+                    (cons 0 (fold2 (lambda(n o1 o2) (values (cons (- (ref n 3) o2) o1) (ref n 3))) '() 0 pl))))))
+
+;; (reverse-4d '((x1 y1 z1 0) (x2 y2 z2 1) (x3 y3 z3 3) (x4 y4 z4 100)))
+
+;; todo: i already have a better implementation somewhere?!
+(define (merge-polyline-4d-2 a b)
+  (cond [(null? a)
+         b]
+        [(null? b)
+         a]
+        [else
+         (assert (zero? (last (car a))))
+         (assert (zero? (last (car b))))
+         (assert (equal? (subseq (last a) 0 3) (subseq (car b) 0 3)))
+         (append a
+                 (let1 l (last (last a))
+                   (adjust-polyline-4d-offset b l)))])) ;; todo: cdr b?!
+
+;; (let ((b '((9.0567383 48.5198042 423.1379008383598 0.0) (9.0568301 48.5197476 423.12746733354504 9.252167970969891) (9.0571689 48.5196919 423.1433522297799 35.035282356543675) (9.057403063097688 48.519664611762614 423.1587945691838 52.59770999429127)))
+;;       (a '((9.057039407261255 48.51971318909548 423.13728086402386 0.0) (9.0571689 48.5196919 423.1433522297799 9.85456344503482) (9.0577773 48.519621 423.18347434716765 55.485070900249205) (9.0577773 48.519621 423.18347434716765 55.485070900249205))))
+;;   #?=(last a)
+;;   #?=(car b)
+;;   (merge-polyline-4d-2 a b))
+
+(define (merge-polyline-4d . l)
+  (fold (lambda(n o)
+          (merge-polyline-4d-2 o n))
+        '()
+        l))
+
+(define (vec-lerp a b x)
+  (map + a (map (cute * <> x) (map - b a))))
+
+(define (lerp a b x)
+  (+ a (* (- b a) x)))
+
+(define (linref pl segment ratio)
+  ;; (write (cons 'linref  (map (cute list 'quote <>) (list pl segment ratio))))
+  ;; (newline)
+  ;; find segment in polyline
+  ;; note: there are precision troubles
+  ;; => try to duplicate osrm's handling of coordinates and use best match
+  (receive(from to)
+      (let ((pl (map (lambda(p)
+                       (map (compose floor->exact (cute * <> 100000)) (subseq p 0 2)))
+                     pl)))
+        (apply values
+               (map (lambda(sp)
+                      (caar
+                       (sort
+                        (map-with-index (lambda(idx p)
+                                          (cons idx (apply max (map (compose abs -) p sp))))
+                                        pl)
+                        (lambda(a b)
+                          (< (cdr a) (cdr b))))))
+                    (map (lambda(p)
+                           (map (compose floor->exact (cute * <> 100000)) p))
+                         segment))))
+    (assert (<= (abs (- from to)) 4))
+    (let1 r (/. (lerp (last (ref pl from)) (last (ref pl to)) ratio)
+                (last (last pl)))
+      (assert (>= r 0))
+      (assert (<= r 1))
+      r)))
+
+;; (linref '((9.0567383 48.5198042 423.1379008383598 0) (9.0568301 48.5197476 423.12746733354504 9.252167970969891) (9.0571689 48.5196919 423.1433522297799 35.035282356543675) (9.0577773 48.519621 423.18347434716765 80.66578981175806)) '((9.05716 48.51969) (9.05777 48.51961)) '0.49701599099977706)
+
+(define (osrm-geometry r)
+  (let1 geom (assoc-ref r "route_geometry")
+    (assert (vector? geom))
+    (map (cut permute-to <list> <> '(1 0)) geom)))
+
+(define (start-segment r)
+  (map (lambda(p) (list (ref p 1) (ref p 0)))
+       (coerce-to <list> (subseq (assoc-ref r "phantomsegments") 0 2))))
+
+(define (end-segment r)
+  (map (lambda(p) (list (ref p 1) (ref p 0)))
+       (coerce-to <list> (subseq (assoc-ref r "phantomsegments") 2 4))))
+
+(define (calculate-start r)
+  (apply vec-lerp (append (start-segment r)
+                          (list (ref (assoc-ref r "ratios") 0)))))
+
+(define (calculate-end r)
+  (apply vec-lerp (append (end-segment r)
+                          (list (ref (assoc-ref r "ratios") 1)))))
+
+(define (start-point r)
+  (let1 p (ref (assoc-ref r "via_points") 0)
+    (list (ref p 1) (ref p 0))))
+
+(define (end-point r)
+  (assert (= (size-of (assoc-ref r "via_points")) 2))
+  (let1 p (ref (assoc-ref r "via_points") 1)
+    (list (ref p 1) (ref p 0))))
+
+(define (start-way-id r)
+  (assoc-ref (assoc-ref r "route_summary") "start_point"))
+
+(define (end-way-id r)
+  (assoc-ref (assoc-ref r "route_summary") "end_point"))
+
+(define (uniq l)
+  (if (null? l)
+    l
+    (reverse (fold (lambda(n o)
+                     (if (equal? n (car o))
+                       o
+                       (cons n o)))
+                   (list (car l))
+                   (cdr l)))))
+
+(define one? (cute = 1 <>))
+
+(define (range start stop)
+  (if (< start stop)
+    (cons start (range (+ start 1) stop))
+    '()))
+
+;; todo: crap
+(define (polyline-4d-substring-2 pl from to)
+  (assert (<= from to))
+  (assert (>= from 0))
+  (assert (<= to 1))
+  (assert (zero? (last (car pl))))
+  (let ((from (* from (last (last pl))))
+        (to   (* to (last (last pl))))
+        (find-interval (lambda(x)
+                         (- (or (find-with-index (lambda(t) (> t x)) (map last pl))
+                                (size-of pl))
+                            1))))
+    (let ((beg (find-interval from))
+          (end (find-interval to)))
+      (let ((lerp-interval (lambda(i t)
+                             (if (>= i (- (size-of pl) 1))
+                               (last pl)
+                               (vec-lerp (ref pl i) (ref pl (+ i 1))
+                                         (/ (- t (ref* pl i 3))
+                                            (- (ref* pl (+ i 1) 3) (ref* pl i 3))))))))
+        (cons (lerp-interval beg from)
+              (append (map (cute ref pl <>) (range (+ beg 1) (+ end 1)))
+                      (list (lerp-interval end to))))))))
+
+(define (polyline-4d-length pl)
+  (assert (zero? (last (car pl))))
+  (last (last pl)))
+
+(define (adjust-polyline-4d-offset pl . args)
+  (let-optionals* args ((o (- (last (car pl)))))
+    (if (zero? o)
+      pl
+      (map (lambda(p)
+             (let1 p (reverse p)
+               (reverse (cons (+ (car p) o) (cdr p)))))
+           pl))))
+
+(define (polyline-4d-substring pl from to)
+  (adjust-polyline-4d-offset
+   (if (<= from to)
+     (polyline-4d-substring-2 pl from to)
+     (polyline-4d-substring-2 (reverse-polyline-4d pl) (- 1 from) (- 1 to)))))
+
+;; (polyline-4d-substring '((0 0 0 0) (50 0 0 50) (100 0 0 100)) 0.2 0.1)
+;; (polyline-4d-substring '((0 0 0 0) (50 0 0 50) (100 0 0 100)) 1 0.4)
+
 (define (wrap-osrm-route-2 context points)
+  (define (way-geometry-2 id)
+    (map (lambda(p)
+           (map string->number (string-split p ",")))
+         (string-split (dbm-get (ref context 'db) id) " ")))
+
+  (define (way-geometry id start end)
+    (polyline-4d-substring (way-geometry-2 id) start end))
+  
   (let1 r (osrm-route points '() (ref context 'osrm-service '("localhost:5000" "/viaroute")))
     ;; todo: catch other errors!
     (when (and (= (assoc-ref r "status") 207)
                (equal? "Cannot find route between points" (assoc-ref r "status_message")))
       (error <route-error> :code 'unreachable))
-    (let1 pr (make-partial-route
-              (let1 geom (assoc-ref r "route_geometry")
-                (assert (not (string? geom)))
-                (upsample-polyline->4d (ref context 'elpro '("localhost" "/cgi-bin/elevation-profile.fcgi"))
-                                       (map (cut permute-to <list> <> '(1 0)) geom)
-                                       50))
-              (s->min (assoc-ref (assoc-ref r "route_summary") "total_time")))
-      ;; compare osm distance vs our distance
-      ;; #?=(list (assoc-ref (assoc-ref r "route_summary") "total_distance") (partial-route-length pr))
-      pr)))
+    ;; (write r)
+    ;; (newline)
+    (let* (;; (instructions->way-list (subseq (assoc-ref r "route_instructions") 0 -1))
+           (way-list #?=(uniq (map (lambda(x)
+                                     (cons (ref x 0)
+                                           (if (odd? (ref x 1)) ;; forward or backward?
+                                             '(0 1)
+                                             '(1 0))))
+                                   #?=(assoc-ref r "segments"))))
+           (start-linref (list (start-way-id r)
+                               (linref (way-geometry (start-way-id r) 0 1)
+                                       (start-segment r)
+                                       (ref (assoc-ref r "ratios") 0))))
+           (end-linref (list (end-way-id r)
+                             (linref (way-geometry (end-way-id r) 0 1)
+                                     (end-segment r)
+                                     (ref (assoc-ref r "ratios") 1)))))
+      (assert (< (apply max (append (map (compose abs -) (calculate-start r) (start-point r))
+                                    (map (compose abs -) (calculate-end r)   (end-point r))))
+                 2e-5))
+      (assert (not (null? way-list)))
+      (let* ((way-list (cond [(= (size-of way-list) 1)
+                              (assert (equal? (ref start-linref 0) (ref end-linref 0)))
+                              (list (append start-linref (list (ref end-linref 1))))]
+                             [else
+                              (assert (equal? (ref start-linref 0) (ref* way-list 0 0)))
+                              (assert (equal? (car (last way-list)) (ref end-linref 0)))
+                              (cons (append start-linref (list (ref* way-list 0 2)))
+                                    (append (drop-right* (cdr way-list) 1)
+                                            (list (list (ref end-linref 0)
+                                                        (ref (last way-list) 1)
+                                                        (ref end-linref 1)))))]))
+             (ways (map (lambda(l) (apply way-geometry l)) #?=way-list))
+             (geometry (apply merge-polyline-4d ways))
+             )
+        ;; (write geometry)
+        ;; (newline)
+        (let1 pr (make-partial-route
+                  (upsample-polyline->4d (ref context 'elpro '("localhost" "/cgi-bin/elevation-profile.fcgi")) (osrm-geometry r) 50)
+                  ;;geometry
+                  (s->min (assoc-ref (assoc-ref r "route_summary") "total_time")))
+          ;; compare osm distance vs our distance
+          ;; #?=(list (assoc-ref (assoc-ref r "route_summary") "total_distance") (partial-route-length pr))
+          (append pr `((waylist . ,(map (lambda(w)
+                                          `(way (@ (id ,(car w))
+                                                   (from ,(number->string (cadr w)))
+                                                   (to ,(number->string (caddr w))))))
+                                        way-list)))))))))
+
+;; some test
+;; (wrap-osrm-route-2 (create-context '()) '((9.056513613489894 . 48.520302993378365) (9.06195045150861 . 48.51884638248705)))
+;; only one way test
+;; (wrap-osrm-route-2 (create-context '()) '((9.057477104737538 . 48.51966197480457) (9.057076304500677 . 48.51970535679522)))
+
+;; ;; same segment
+;; (wrap-osrm-route-2 (create-context '()) '((9.056919947513997 . 48.51972690702891) (9.056966664085719 . 48.51972328537291)))
+;; ;; segment neighbour
+;; (wrap-osrm-route-2 (create-context '()) '((9.056919947513997 . 48.51972690702891) (9.057409424005773 . 48.519660990468545)))
+;; ;; segment between start/end
+;; (wrap-osrm-route-2 (create-context '()) '((9.056788641422633 . 48.51977465264033) (9.057409424005773 . 48.519660990468545)))
+;; ;; neighbours on different ways
+;; (wrap-osrm-route-2 (create-context '()) '((9.057611179130467 . 48.519640198026586) (9.05789010911645 . 48.51960587189234)))
+
 
 ;; todo: also in
 (define (group-pairwise l)
@@ -85,9 +328,12 @@
 ;; (wrap-osrm-route '(("q" "from:48.52608311031189,8.983340995511963to:48.52975538424495,9.15725614289749") ("format" "js")))
 
 (define (create-context al)
-  (alist->hash-table al))
+  (alist->hash-table (acons 'db (dbm-open <gdbm> :path "../waysplit/ways.dbm" :rw-mode :read)
+                            al)))
 
 (define (wrap-osrm-main config . args)
+  (when (eq? (port-buffering (current-error-port)) :none)
+    (set! (port-buffering (current-error-port)) :line))
   #?=(list "started")
   ;; todo: do this in apache config
   (sys-putenv "PATH" "/usr/local/bin:/usr/bin:/bin")
