@@ -228,7 +228,7 @@
                               (way-relation-file "way-relation.dbm")
                               (relation-file     "relation.dbm")
                               (cache-size "4096"))
-    (sys-setenv "LUA_PATH" "../profiles/?.lua;;")
+    (sys-setenv "LUA_PATH" "../profiles/?.lua;;" #t)
     (let ((way-splits (dbm-open <gdbm> :path way-splits :rw-mode :read))
 	  ;; (used-nodes (make-huge-sparse-bitmap used-nodes
           ;;                                      :cache-size (string->number cache-size)
