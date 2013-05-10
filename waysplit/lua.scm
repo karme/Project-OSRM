@@ -34,6 +34,7 @@
   (use gauche.process)
   (use srfi-13)
   (use text.tree)
+  (use util.list)
   (export run-lua-repl
           lua-eval-string
           lua-eval-luise
