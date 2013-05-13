@@ -168,7 +168,20 @@ public:
             //merge edges (s,t) and (t,s) into bidirectional edge
             if ( forwardEdge.data.distance == backwardEdge.data.distance ) {
                 if ( (int)forwardEdge.data.distance != std::numeric_limits< int >::max() ) {
-                    assert(0);
+		    INFO("merge edges");
+#define STR(x) #x
+#define DP(x) << STR(x) " << " = " << forwardEdge.x
+		    std::cout << "{" << DP(source) << ", " << DP(target)<< ", data={";
+#undef DP(x)
+#define DP(x) << STR(x) " << " = " << forwardEdge.data.x
+		    std::cout << DP(distance) << ", " << DP(id) << ", " << DP(originalEdges)<< ", " << DP(shortcut)<< ", " << DP(forward) << ", " << DP(backward) << ", " << DP(originalViaNodeID) << "}}" << std::endl;
+#undef DP(x)
+#define DP(x) << STR(x) " << " = " << backwardEdge.x
+		    std::cout << "{" << DP(source) << ", " << DP(target)<< ", data={";
+#undef DP(x)
+#define DP(x) << STR(x) " << " = " << backwardEdge.data.x
+		    std::cout << DP(distance) << ", " << DP(id) << ", " << DP(originalEdges)<< ", " << DP(shortcut)<< ", " << DP(forward) << ", " << DP(backward) << ", " << DP(originalViaNodeID) << "}}" << std::endl;
+#undef DP(x)
                     forwardEdge.data.backward = true;
                     edges[edge++] = forwardEdge;
                 }
