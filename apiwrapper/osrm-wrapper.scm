@@ -21,6 +21,7 @@
   (use www.cgi)
   (use util.list)
   (use gauche.sequence)
+  (use srfi-1)
   (use srfi-14)
   (use rfc.json)
   (use sxml.adaptor) ;; for assert macro
