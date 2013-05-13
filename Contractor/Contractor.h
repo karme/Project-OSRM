@@ -170,18 +170,18 @@ public:
                 if ( (int)forwardEdge.data.distance != std::numeric_limits< int >::max() ) {
 		    INFO("merge edges");
 #define STR(x) #x
-#define DP(x) << STR(x) " << " = " << forwardEdge.x
+#define DP(x) STR(x) << " = " << forwardEdge.x
 		    std::cout << "{" << DP(source) << ", " << DP(target)<< ", data={";
-#undef DP(x)
-#define DP(x) << STR(x) " << " = " << forwardEdge.data.x
+#undef DP
+#define DP(x) STR(x) << " = " << forwardEdge.data.x
 		    std::cout << DP(distance) << ", " << DP(id) << ", " << DP(originalEdges)<< ", " << DP(shortcut)<< ", " << DP(forward) << ", " << DP(backward) << ", " << DP(originalViaNodeID) << "}}" << std::endl;
-#undef DP(x)
-#define DP(x) << STR(x) " << " = " << backwardEdge.x
+#undef DP
+#define DP(x) STR(x) << " = " << backwardEdge.x
 		    std::cout << "{" << DP(source) << ", " << DP(target)<< ", data={";
-#undef DP(x)
-#define DP(x) << STR(x) " << " = " << backwardEdge.data.x
+#undef DP
+#define DP(x) STR(x) << " = " << backwardEdge.data.x
 		    std::cout << DP(distance) << ", " << DP(id) << ", " << DP(originalEdges)<< ", " << DP(shortcut)<< ", " << DP(forward) << ", " << DP(backward) << ", " << DP(originalViaNodeID) << "}}" << std::endl;
-#undef DP(x)
+#undef DP
                     forwardEdge.data.backward = true;
                     edges[edge++] = forwardEdge;
                 }
