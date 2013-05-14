@@ -83,6 +83,39 @@ public:
                 descriptionFactory.AppendSegment(current, pathData );
             }
             descriptionFactory.SetEndSegment(phantomNodes.targetPhantom);
+
+            {
+                reply.content += "\"segments\":[";
+                reply.content += "[\"";
+                reply.content += sEngine.GetEscapedNameForNameID(phantomNodes.startPhantom.nodeBasedEdgeNameID);
+                reply.content += "\",";
+                reply.content += boost::lexical_cast<std::string>(int(phantomNodes.startPhantom.mode1));
+                reply.content += "]";
+                BOOST_FOREACH(const _PathData & pathData, rawRoute.computedShortestPath) {
+                    reply.content += ",[\"";
+                    reply.content += sEngine.GetEscapedNameForNameID(pathData.nameID);
+                    reply.content += "\",";
+                    reply.content += boost::lexical_cast<std::string>(int(pathData.mode));
+                    reply.content += "]";
+                }
+                reply.content += "],";
+                reply.content += "\"phantomsegments\":";
+                {
+                    PolylineCompressor pc;
+                    std::vector<_Coordinate> v;
+                    v.push_back(phantomNodes.startPhantom.segmentStart);
+                    v.push_back(phantomNodes.startPhantom.segmentEnd);
+                    v.push_back(phantomNodes.targetPhantom.segmentStart);
+                    v.push_back(phantomNodes.targetPhantom.segmentEnd);
+                    pc.printUnencodedString(v, reply.content);
+                }
+                reply.content += ",";
+                reply.content += "\"phantomratios\":[";
+                reply.content += boost::lexical_cast<std::string>(phantomNodes.startPhantom.ratio);
+                reply.content += ",";
+                reply.content += boost::lexical_cast<std::string>(phantomNodes.targetPhantom.ratio);
+                reply.content += "],";
+            }
         } else {
             //We do not need to do much, if there is no route ;-)
             reply.content += "207,"
@@ -108,38 +141,6 @@ public:
                 numberOfEnteredRestrictedAreas += (currentInstruction != segment.turnInstruction);
             }
         }
-        reply.content += "],";
-        {
-            reply.content += "\"segments\":[";
-            reply.content += "[\"";
-            reply.content += sEngine.GetEscapedNameForNameID(phantomNodes.startPhantom.nodeBasedEdgeNameID);
-            reply.content += "\",";
-            reply.content += boost::lexical_cast<std::string>(int(phantomNodes.startPhantom.mode1));
-            reply.content += "]";
-            BOOST_FOREACH(const _PathData & pathData, rawRoute.computedShortestPath) {
-                reply.content += ",[\"";
-                reply.content += sEngine.GetEscapedNameForNameID(pathData.nameID);
-                reply.content += "\",";
-                reply.content += boost::lexical_cast<std::string>(int(pathData.mode));
-                reply.content += "]";
-            }
-            reply.content += "],";
-            reply.content += "\"phantomsegments\":";
-            {
-                PolylineCompressor pc;
-                std::vector<_Coordinate> v;
-                v.push_back(phantomNodes.startPhantom.segmentStart);
-                v.push_back(phantomNodes.startPhantom.segmentEnd);
-                v.push_back(phantomNodes.targetPhantom.segmentStart);
-                v.push_back(phantomNodes.targetPhantom.segmentEnd);
-                pc.printUnencodedString(v, reply.content);
-            }
-            reply.content += ",";
-        }
-        reply.content += "\"phantomratios\":[";
-        reply.content += boost::lexical_cast<std::string>(phantomNodes.startPhantom.ratio);
-        reply.content += ",";
-        reply.content += boost::lexical_cast<std::string>(phantomNodes.targetPhantom.ratio);
         reply.content += "],";
         descriptionFactory.BuildRouteSummary(descriptionFactory.entireLength, rawRoute.lengthOfShortestPath - ( numberOfEnteredRestrictedAreas*TurnInstructions.AccessRestrictionPenalty));
 
