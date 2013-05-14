@@ -105,7 +105,6 @@
                     (map (lambda(p)
                            (map (compose floor->exact (cute * <> 100000)) p))
                          segment))))
-    (assert (<= (abs (- from to)) 4))
     (let1 r (/. (lerp (last (ref pl from)) (last (ref pl to)) ratio)
                 (last (last pl)))
       (assert (>= r 0))
