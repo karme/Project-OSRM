@@ -86,14 +86,14 @@ public:
 
             {
                 reply.content += "\"segments\":[";
-                typedef std::pair<std::string, TravelMode> P;
+                typedef std::pair<NodeID, TravelMode> P;
                 P pair, lastpair;
-                lastpair=pair=P(sEngine.GetEscapedNameForNameID(phantomNodes.startPhantom.nodeBasedEdgeNameID), phantomNodes.startPhantom.mode1);
-                reply.content += std::string("[\"") + pair.first + "\"," + boost::lexical_cast<std::string>(int(pair.second)) + "]";
+                lastpair=pair=P(phantomNodes.startPhantom.nodeBasedEdgeNameID, phantomNodes.startPhantom.mode1);
+                reply.content += std::string("[\"") + sEngine.GetEscapedNameForNameID(pair.first) + "\"," + boost::lexical_cast<std::string>(int(pair.second)) + "]";
                 BOOST_FOREACH(const _PathData & pathData, rawRoute.computedShortestPath) {
-                    pair=P(sEngine.GetEscapedNameForNameID(pathData.nameID), pathData.mode);
+                    pair=P(pathData.nameID, pathData.mode);
                     if (pair != lastpair) {
-                        reply.content += std::string(",[\"") + pair.first + "\"," + boost::lexical_cast<std::string>(int(pair.second)) + "]";
+                        reply.content += std::string(",[\"") + sEngine.GetEscapedNameForNameID(pair.first) + "\"," + boost::lexical_cast<std::string>(int(pair.second)) + "]";
                         lastpair=pair;
                     }
                 }
