@@ -284,7 +284,7 @@
                                             (list (list (ref end-linref 0)
                                                         (ref (last way-list) 1)
                                                         (ref end-linref 1)))))]))
-             (ways (map (lambda(l) (apply way-geometry l)) #?=way-list))
+             (ways (map (lambda(l) (apply way-geometry l)) way-list))
              (speeds (map (lambda(l) (apply way-speed l)) way-list))
              (total-time (apply + (map (lambda(s v) (/ s v))
                                        (map polyline-4d-length ways)
