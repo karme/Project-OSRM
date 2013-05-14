@@ -248,7 +248,7 @@
   ;;   (lambda()
   ;;     (write `(wrap-osrm-route-2 ',context ',points))))
   
-  (let1 r (osrm-route points '() (ref context 'osrm-service '("localhost:5000" "/viaroute")))
+  (let1 r (osrm-route points '() (ref context 'osrm-service))
     ;; todo: catch other errors!
     (when (and (= (assoc-ref r "status") 207)
                (equal? "Cannot find route between points" (assoc-ref r "status_message")))
@@ -353,9 +353,27 @@
 ;; (wrap-osrm-route-2 '((8.983340995511963 . 48.52608311031189) (9.15725614289749 . 48.52975538424495)))
 ;; (wrap-osrm-route '(("q" "from:48.52608311031189,8.983340995511963to:48.52975538424495,9.15725614289749") ("format" "js")))
 
+;; taken from kahua (kahua-merge-headers)
+(define (merge-headers headers . more-headers)
+  (let outer ((headers headers)
+              (more    more-headers))
+    (if (null? more)
+      headers
+      (let inner ((headers headers)
+                  (header (car more)))
+        (if (null? header)
+          (outer headers (cdr more))
+          (inner (cons (car header) (alist-delete (caar header) headers))
+                 (cdr header)))
+        ))
+    ))
+
 (define (create-context al)
-  (alist->hash-table (acons 'db (dbm-open <gdbm> :path "../waysplit/ways.dbm" :rw-mode :read)
-                            al)))
+  (let1 al (merge-headers `((osrm-service . ("localhost:5000" "/viaroute"))
+                            (waydb-file "../waysplit/ways.dbm"))
+                          al)
+    (alist->hash-table (acons 'db (dbm-open <gdbm> :path (assoc-ref al 'waydb-file) :rw-mode :read)
+                              al))))
 
 (define (wrap-osrm-main config . args)
   (when (eq? (port-buffering (current-error-port)) :none)
