@@ -236,11 +236,12 @@
   (define (way-geometry id start end)
     (polyline-4d-substring (way-geometry-2 id) start end))
 
+  ;; todo: partial ways!
   (define (way-speed id start end)
     (/ ((if (<= start end)
           car
           cdr)
-        #?=(assoc-ref (way-info id) 'speed))
+        (assoc-ref (way-info id) 'speed))
        3.6))
 
   ;; (with-output-to-file "/tmp/lastcall2"
