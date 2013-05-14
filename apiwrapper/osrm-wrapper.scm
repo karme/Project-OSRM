@@ -226,7 +226,7 @@
 ;; (polyline-4d-substring '((0 0 0 0) (50 0 0 50) (100 0 0 100)) 0.2 0.1)
 ;; (polyline-4d-substring '((0 0 0 0) (50 0 0 50) (100 0 0 100)) 1 0.4)
 
-(define (wrap-osrm-route-2 context timescale points)
+(define (wrap-osrm-route-2 context timescale profile points)
   ;; todo: maybe cache
   (define (way-info id) (read-from-string (dbm-get (ref context 'db) id)))
 
@@ -241,7 +241,7 @@
     (/ ((if (<= start end)
           car
           cdr)
-        (assoc-ref (way-info id) 'speed))
+        #?=(assoc-ref #?=(assoc-ref (way-info id) 'speed) #?=profile))
        3.6))
 
   ;; (with-output-to-file "/tmp/lastcall2"
@@ -286,7 +286,9 @@
                                                         (ref end-linref 1)))))]))
              (ways (map (lambda(l) (apply way-geometry l)) way-list))
              (speeds (map (lambda(l) (apply way-speed l)) way-list))
-             (total-time (*. (apply + (map (lambda(s v) (/ s v))
+             (total-time (*. (apply + (map (lambda(s v)
+                                             (assert (> v 0))
+                                             (/ s v))
                                            (map polyline-4d-length ways)
                                            speeds))
                              timescale))
@@ -371,7 +373,9 @@
                            [else
                             (assert (list? f))
                             (assert (eq? (car f) 'sport-preset))
-                            (apply sport-preset-timescale (cdr f))]))))
+                            (apply sport-preset-timescale (cdr f))])))
+        (profile 'bicycle) ;; todo!
+        )
     (let ((render (assoc-ref `(("js"    . ,(cut google-directions-v3-out jscallback jsfilter jsgeom <>))
                                ("xml"   . ,render-xml)
                                ("sxml"  . ,render-sxml))
@@ -380,7 +384,7 @@
                 `(result
                   (itdRouteList
                    (itdRoute
-                    ,(wrap-osrm-route-2 context timescale (group-pairwise (google-directions-query->track query)))))))))))
+                    ,(wrap-osrm-route-2 context timescale profile (group-pairwise (google-directions-query->track query)))))))))))
 
 ;; simple test
 ;; (wrap-osrm-route-2 '((8.983340995511963 . 48.52608311031189) (9.15725614289749 . 48.52975538424495)))

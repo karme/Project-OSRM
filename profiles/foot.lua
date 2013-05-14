@@ -1,4 +1,6 @@
 -- Foot profile
+require("lib/elevation")
+require("lib/util")
 
 -- Begin of globals
 
@@ -113,12 +115,9 @@ function way_function (way)
     end
 
 
-    -- Set the name that will be used for instructions  
-    if "" ~= ref then
-        way.name = ref
-    elseif "" ~= name then
-        way.name = name
-    end
+    way.name = ''..way.id
+    way.forward.mode = 1*2
+    way.backward.mode = 1*2
 
     if "roundabout" == junction then
         way.roundabout = true;
@@ -126,8 +125,8 @@ function way_function (way)
 
     -- Handling ferries and piers
     if (speed_profile[route] and speed_profile[route]>0) or (speed_profile[man_made] and speed_profile[man_made]>0) then
-        way.forward.mode = 2
-        way.backward.mode = 2
+        way.forward.mode = 2*2
+        way.backward.mode = 2*2
         if durationIsValid(duration) then
             way.duration = math.max( 1, parseDuration(duration) )
         else
@@ -141,8 +140,8 @@ function way_function (way)
             highway = man_made
         end
         if speed_profile[highway] then 
-            way.forward.mode = 1
-            way.backward.mode = 1
+            way.forward.mode = 1*2
+            way.backward.mode = 1*2
             way.forward.speed = speed_profile[highway]
             way.backward.speed = speed_profile[highway]
         end
@@ -162,6 +161,30 @@ function way_function (way)
             way.is_access_restricted = true
         end
     end
-    
+
+    -- elevation
+    local elevation_profile = Elevation.parse_profile(way.tags:Find("profile"))
+    if elevation_profile then
+       local speed_scale_fwd, speed_scale_bwd = Elevation.speed_scales(elevation_profile)
+       scale_way_speeds(way, speed_scale_fwd, speed_scale_bwd)
+    end
+
+    -- todo: maxspeed?
+
+    -- todo: prefer walk ways?!
+
+    -- todo: we want to adjust the cost function here / not the time/speed function
+    -- for now use a hack (note: this only works with the fake way!)
+    way.forward.realspeed = way.forward.speed
+    way.backward.realspeed = way.backward.speed
+
+    -- adjust mode for direction
+    if way.forward.mode > 0 then
+       way.forward.mode = set_lowest_bit(way.forward.mode, 1)
+    end
+    if way.backward.mode > 0 then
+       way.backward.mode = set_lowest_bit(way.backward.mode, 0)
+       assert (way.backward.mode > 0)
+    end
     return true
 end

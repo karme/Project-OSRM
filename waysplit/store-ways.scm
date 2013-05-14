@@ -4,11 +4,12 @@
 (use dbm.gdbm)
 (use sxml.adaptor) ;; for assert
 (use sxml.sxpath)
+(use sxml.tools)
 
 (define way-id (car-sxpath '(@ id *text*)))
-(define way-geometry (car-sxpath "/tag[@k='geometry']/@v/text()"))
-(define way-speed-fwd (car-sxpath "/tag[@k='osrm:fwd:speed']/@v/text()"))
-(define way-speed-bwd (car-sxpath "/tag[@k='osrm:bwd:speed']/@v/text()"))
+(define way-tags (compose (cute alist->hash-table <> 'equal?)
+                          (cute map (lambda(tag) (cons (sxml:attr tag 'k) (sxml:attr tag 'v))) <>)
+                          (sxpath '(tag))))
   
 (define (main args)
   (let-optionals* (cdr args) ((db-file "ways.dbm"))
@@ -16,11 +17,15 @@
       (until (read) eof-object? => expr
              (case (car expr)
                [(way)
-                (dbm-put! db (way-id expr)
-                          (write-to-string `((geom . ,(map (lambda(p)
-                                                             (map string->number (string-split p ",")))
-                                                           (string-split (way-geometry expr) " ")))
-                                             (speed . ,(cons (string->number (way-speed-fwd expr))
-                                                             (string->number (way-speed-bwd expr)))))))]))))
+                (let1 tags (way-tags expr)
+                  (dbm-put! db (way-id expr)
+                            (write-to-string `((geom . ,(map (lambda(p)
+                                                               (map string->number (string-split p ",")))
+                                                             (string-split (ref tags "geometry") " ")))
+                                               (speed . ,(map (lambda(profile)
+                                                                (cons profile
+                                                                      (cons (string->number (ref tags #`"osrm:,|profile|:fwd:speed" "0"))
+                                                                            (string->number (ref tags #`"osrm:,|profile|:bwd:speed" "0")))))
+                                                              '(foot bicycle)))))))]))))
   0)
 
