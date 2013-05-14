@@ -226,7 +226,7 @@
 ;; (polyline-4d-substring '((0 0 0 0) (50 0 0 50) (100 0 0 100)) 0.2 0.1)
 ;; (polyline-4d-substring '((0 0 0 0) (50 0 0 50) (100 0 0 100)) 1 0.4)
 
-(define (wrap-osrm-route-2 context points)
+(define (wrap-osrm-route-2 context timescale points)
   ;; todo: maybe cache
   (define (way-info id) (read-from-string (dbm-get (ref context 'db) id)))
 
@@ -286,9 +286,10 @@
                                                         (ref end-linref 1)))))]))
              (ways (map (lambda(l) (apply way-geometry l)) way-list))
              (speeds (map (lambda(l) (apply way-speed l)) way-list))
-             (total-time (apply + (map (lambda(s v) (/ s v))
-                                       (map polyline-4d-length ways)
-                                       speeds)))
+             (total-time (*. (apply + (map (lambda(s v) (/ s v))
+                                           (map polyline-4d-length ways)
+                                           speeds))
+                             timescale))
              (geometry (apply merge-polyline-4d ways)))
         ;; (write geometry)
         ;; (newline)
@@ -333,12 +334,44 @@
               (list)
               l))
 
+;; todo
+(define safe-read-from-string read-from-string)
+
+;; todo
+(define *time-presets* '((hikingTourTrail . 4)
+                         (cycling . 15)
+                         (default . 1)))
+
+(define (sport-preset-timescale preset . args)
+  (let-optionals* args ((option 'shortest)
+                        (v-avg #f))
+    (assert (member option '(shortest fastest flat network)))
+    (let1 timescale (if (not v-avg)
+                      1
+                      (/. (if-let1 r (assoc-ref *time-presets* preset 1)
+                            r
+                            (begin
+                              (list "Warning! using default time-preset instead of" preset)
+                              (assoc-ref *time-presets* 'default 1)))
+                          (x->number v-avg)))
+      (assert (> timescale 0))
+      timescale)))
+
 (define (wrap-osrm-route context params)
   (let ((jscallback (cgi-get-parameter "callback" params :default ""))
         (jsfilter (cgi-get-parameter "jsfilter" params :list #t :default '()))
         (jsgeom (cgi-get-parameter "jsgeom" params))
         (format (cgi-get-parameter "format" params :default "js"))
-        (query (cgi-get-parameter "q" params)))
+        (query (cgi-get-parameter "q" params))
+        (timescale (let1 f (safe-read-from-string (cgi-get-parameter "costff" params :default "length"))
+                     (cond [(symbol? f)
+                            (assert (eq? f 'length))
+                            ;; todo: shortest path routing
+                            1]
+                           [else
+                            (assert (list? f))
+                            (assert (eq? (car f) 'sport-preset))
+                            (apply sport-preset-timescale (cdr f))]))))
     (let ((render (assoc-ref `(("js"    . ,(cut google-directions-v3-out jscallback jsfilter jsgeom <>))
                                ("xml"   . ,render-xml)
                                ("sxml"  . ,render-sxml))
@@ -347,7 +380,7 @@
                 `(result
                   (itdRouteList
                    (itdRoute
-                    ,(wrap-osrm-route-2 context (group-pairwise (google-directions-query->track query)))))))))))
+                    ,(wrap-osrm-route-2 context timescale (group-pairwise (google-directions-query->track query)))))))))))
 
 ;; simple test
 ;; (wrap-osrm-route-2 '((8.983340995511963 . 48.52608311031189) (9.15725614289749 . 48.52975538424495)))
