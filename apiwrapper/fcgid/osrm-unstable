@@ -9,7 +9,9 @@ exec gosh -I. -- $0 "$@"
 (use osrm-wrapper)
 
 (define (config)
-  '((osrm-service . ("localhost:5001" "/viaroute"))))
+  '((osrm-service . ("localhost:5001" "/viaroute"))
+    (waydb-file . "/home/karme/osm/unstable_ways.dbm")))
+                  
 
 (define (main args)
   (apply wrap-osrm-main (cons config args)))

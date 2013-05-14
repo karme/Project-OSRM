@@ -9,7 +9,7 @@ exec gosh -I. -- $0 "$@"
 (use osrm-wrapper)
 
 (define (config)
-  '())
+  '((waydb-file . "/home/karme/osm/stable_ways.dbm")))
 
 (define (main args)
   (apply wrap-osrm-main (cons config args)))
