@@ -254,12 +254,12 @@
       (error <route-error> :code 'unreachable))
     ;; (write r)
     ;; (newline)
-    (let* ((way-list (uniq (map (lambda(x)
-                                  (cons (ref x 0)
-                                        (if (odd? (ref x 1)) ;; forward or backward?
-                                          '(0 1)
-                                          '(1 0))))
-                                (assoc-ref r "segments"))))
+    (let* ((way-list (map (lambda(x)
+                            (cons (ref x 0)
+                                  (if (odd? (ref x 1)) ;; forward or backward?
+                                    '(0 1)
+                                    '(1 0))))
+                          (assoc-ref r "segments")))
            (start-linref (list (start-way-id r)
                                (linref (way-geometry (start-way-id r) 0 1)
                                        (start-segment r)
