@@ -54,3 +54,17 @@ if not parseMaxspeed then
       return tonumber(x) or 0
    end
 end
+
+if not durationIsValid then
+   -- todo:
+   durationIsValid = function(x)
+      return false
+   end
+end
+
+if not parseDuration then
+   -- todo:
+   parseDuration = function(x)
+      return 1;
+   end
+end
