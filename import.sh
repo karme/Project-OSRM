@@ -1,28 +1,60 @@
 #!/bin/bash -xe
 X="$1"
 test -z "$X" && X="unstable"
-#renice 20 -p $$
-#ionice -c 3 -p $$
-rm -vf ~/osm/$X.osm.bz2 ~/osm/$X.osm.pbf ~/osm/$X.osrm.*
-URL="http://planet.openstreetmap.org/planet/planet-latest.osm.bz2"
+
+POLY="$2"
+test -z "$POLY" && POLY="europe"
+POLY="$POLY.poly"
+
+OUTDIR="$3"
+test -z "$OUTDIR" && OUTDIR=$PWD/build/data
+
+#URL="http://planet.openstreetmap.org/planet/planet-latest.osm.bz2"
 #URL="http://download.geofabrik.de/openstreetmap/europe.osm.bz2"
 #URL="http://download.geofabrik.de/openstreetmap/europe/germany/baden-wuerttemberg.osm.bz2"
-#URL="http://download.geofabrik.de/openstreetmap/europe/germany/baden-wuerttemberg/tuebingen-regbez.osm.bz2"
-test -f ~/osm/$X.osm.bz2 || wget -O ~/osm/$X.osm.bz2 "$URL"
+URL="http://download.geofabrik.de/openstreetmap/europe/germany/baden-wuerttemberg/tuebingen-regbez.osm.bz2"
+PROFILES="foot bicycle"
+
+#renice 20 -p $$
+#ionice -c 3 -p $$
+
+test -d $OUTDIR || mkdir -p $OUTDIR
+rm -vf ${OUTDIR}/$X.osm.pbf
+for P in $PROFILES; do
+    rm -vf ${OUTDIR}/$P/$X.*
+done
+
+test -f ${OUTDIR}/$X.osm.bz2 || { wget -O ${OUTDIR}/$X.osm.bz2 "$URL" && rm -vf ${OUTDIR}/$X.cut.osm.bz2 ; }
+
+# download poly files
+test -f ${OUTDIR}/europe.poly || wget -O ${OUTDIR}/europe.poly "https://raw.github.com/MaZderMind/osm-history-splitter/master/clipbounds/europe.poly"
+test -f ${OUTDIR}/bw.poly || wget -O ${OUTDIR}/bw.poly "https://raw.github.com/MaZderMind/osm-history-splitter/master/clipbounds/europe/germany/baden-wuerttemberg.poly"
+# create poly file
+{ cat <<EOF
+none
+1
+    9.04293199 48.52349435
+    9.04292543 48.51572149
+    9.07109099 48.51570754
+    9.07110187 48.52348040
+END
+END
+EOF
+} > ${OUTDIR}/tue.poly
 
 # cut out poly using osmosis
-test -f ~/osm/europe.poly || wget -O ~/osm/europe.poly "https://raw.github.com/MaZderMind/osm-history-splitter/master/clipbounds/europe.poly"
-test -f ~/osm/bw.poly || wget -O ~/osm/bw.poly "https://raw.github.com/MaZderMind/osm-history-splitter/master/clipbounds/europe/germany/baden-wuerttemberg.poly"
-
-pv ~/osm/$X.osm.bz2|pbzip2 -d|osmosis --read-xml file=/dev/stdin --bounding-polygon file=~/osm/bw.poly completeWays=yes --write-xml /dev/stdout|pbzip2 > ~/osm/$X.2.osm.bz2
-mv -v ~/osm/$X.osm.bz2 ~/osm/$X.1.osm.bz2
-mv -v ~/osm/$X.2.osm.bz2 ~/osm/$X.osm.bz2
-
+test -f ${OUTDIR}/$X.cut.osm.bz2 || pv ${OUTDIR}/$X.osm.bz2|pbzip2 -d|osmosis --read-xml file=/dev/stdin --bounding-polygon file=${OUTDIR}/$POLY completeWays=yes --write-xml /dev/stdout|pbzip2 > ${OUTDIR}/$X.cut.osm.bz2
 
 pushd waysplit
-time ./waysplit.sh ~/osm/$X.osm.bz2 ~/osm/${X}_ways.dbm |osmosis --read-xml - --write-pbf ~/osm/$X.osm.pbf omitmetadata=true
+# note: $X.split.osm.bz2 only for debugging
+time ./waysplit.sh ${OUTDIR}/$X.cut.osm.bz2 ${OUTDIR}/${X}.ways.dbm |tee >(pbzip2 > ${OUTDIR}/$X.split.osm.bz2)|osmosis --read-xml - --write-pbf ${OUTDIR}/$X.osm.pbf omitmetadata=true
 popd
 
-PROFILE="profiles/bicycle.lua"
-time ./build/osrm-extract ~/osm/$X.osm.pbf $PROFILE
-time ./build/osrm-prepare ~/osm/$X.osrm ~/osm/$X.osrm.restrictions $PROFILE
+for P in $PROFILES; do
+    PROFILE="profiles/$P.lua"
+    mkdir -p ${OUTDIR}/$P
+    cp -vl ${OUTDIR}/$X.osm.pbf ${OUTDIR}/$P/$X.osm.pbf
+    time ./build/osrm-extract ${OUTDIR}/$P/$X.osm.pbf $PROFILE
+    time ./build/osrm-prepare ${OUTDIR}/$P/$X.osrm ${OUTDIR}/$P/$X.osrm.restrictions $PROFILE
+    rm -v ${OUTDIR}/$P/$X.osm.pbf
+done
