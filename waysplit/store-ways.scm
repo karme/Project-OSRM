@@ -5,6 +5,7 @@
 (use sxml.adaptor) ;; for assert
 (use sxml.sxpath)
 (use sxml.tools)
+(use util.list)
 
 (define way-id (car-sxpath '(@ id *text*)))
 (define way-tags (compose (cute alist->hash-table <> 'equal?)
