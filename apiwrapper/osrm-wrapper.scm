@@ -407,7 +407,7 @@
 
 (define (create-context al)
   (let1 al (merge-headers `((osrm-service . ("localhost:5000" "/viaroute"))
-                            (waydb-file "../waysplit/ways.dbm"))
+                            (waydb-file . "../build/data/test.ways.dbm"))
                           al)
     (alist->hash-table (acons 'db (dbm-open <gdbm> :path (assoc-ref al 'waydb-file) :rw-mode :read)
                               al))))
