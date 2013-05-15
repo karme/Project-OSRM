@@ -1,10 +1,11 @@
 #!/bin/bash -xe
-X="$1"
-test -z "$X" && X="unstable"
 
-POLY="$2"
+POLY="$1"
 test -z "$POLY" && POLY="europe"
 POLY="$POLY.poly"
+
+X="$2"
+test -z "$X" && X="test"
 
 OUTDIR="$3"
 test -z "$OUTDIR" && OUTDIR=$PWD/build/data
