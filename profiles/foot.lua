@@ -124,7 +124,7 @@ function way_function (way)
     end
 
     -- Handling ferries and piers
-    if false; then
+    if false then
         -- (speed_profile[route] and speed_profile[route]>0) or (speed_profile[man_made] and speed_profile[man_made]>0) then
         way.forward.mode = 2*2
         way.backward.mode = 2*2
