@@ -248,7 +248,7 @@
   ;;   (lambda()
   ;;     (write `(wrap-osrm-route-2 ',context ',points))))
   
-  (let1 r (osrm-route points '() (ref context 'osrm-service))
+  (let1 r (osrm-route points '() (assoc-ref (ref context 'osrm-service) profile))
     ;; todo: catch other errors!
     (when (and (= (assoc-ref r "status") 207)
                (equal? "Cannot find route between points" (assoc-ref r "status_message")))
@@ -336,55 +336,69 @@
               (list)
               l))
 
-;; todo
-(define safe-read-from-string read-from-string)
+;; todo: also in
+(define (read/ns)
+  (let1 l (read-line)
+    (cond [(eof-object? l)
+           l]
+          [else
+           ;; hack: to disallow cyclic structures
+           (when (string-scan l #\#)
+             (error "read/ns doesn't allow cyclic structures"))
+           ;; note: empty line => eof
+           (read-from-string l)])))
 
 ;; todo
-(define *time-presets* '((hikingTourTrail . 4)
-                         (cycling . 15)
-                         (default . 1)))
+(define (safer-read-from-string s)
+  (with-input-from-string s read/ns))
 
-(define (sport-preset-timescale preset . args)
+;; todo
+(define *presets* '((hikingTourTrail . ((vstd . 4) (profile . foot)))
+                    (cycling . ((vstd . 15) (profile . bicycle)))
+                    (default . ((vstd . 15) (profile . bicycle)))))
+
+(define (sport-preset preset . args)
   (let-optionals* args ((option 'shortest)
                         (v-avg #f))
     (assert (member option '(shortest fastest flat network)))
-    (let1 timescale (if (not v-avg)
-                      1
-                      (/. (if-let1 r (assoc-ref *time-presets* preset 1)
-                            r
-                            (begin
-                              (list "Warning! using default time-preset instead of" preset)
-                              (assoc-ref *time-presets* 'default 1)))
-                          (x->number v-avg)))
+    (assert (assoc-ref *presets* preset))
+    (let1 timescale (or (and v-avg
+                             (/. (assoc-ref (assoc-ref *presets* preset) 'vstd)
+                                 (x->number v-avg)))
+                        1)
       (assert (> timescale 0))
-      timescale)))
+      (values timescale
+              (assoc-ref (assoc-ref *presets* preset) 'profile)))))
 
 (define (wrap-osrm-route context params)
   (let ((jscallback (cgi-get-parameter "callback" params :default ""))
         (jsfilter (cgi-get-parameter "jsfilter" params :list #t :default '()))
         (jsgeom (cgi-get-parameter "jsgeom" params))
         (format (cgi-get-parameter "format" params :default "js"))
-        (query (cgi-get-parameter "q" params))
-        (timescale (let1 f (safe-read-from-string (cgi-get-parameter "costff" params :default "length"))
-                     (cond [(symbol? f)
-                            (assert (eq? f 'length))
-                            ;; todo: shortest path routing
-                            1]
-                           [else
-                            (assert (list? f))
-                            (assert (eq? (car f) 'sport-preset))
-                            (apply sport-preset-timescale (cdr f))])))
-        (profile 'bicycle) ;; todo!
-        )
-    (let ((render (assoc-ref `(("js"    . ,(cut google-directions-v3-out jscallback jsfilter jsgeom <>))
-                               ("xml"   . ,render-xml)
-                               ("sxml"  . ,render-sxml))
-                             format)))
-      (render (lambda()
-                `(result
-                  (itdRouteList
-                   (itdRoute
-                    ,(wrap-osrm-route-2 context timescale profile (group-pairwise (google-directions-query->track query)))))))))))
+        (query (cgi-get-parameter "q" params)))
+    (receive (timescale profile)
+        (let1 f (safer-read-from-string (cgi-get-parameter "costff" params :default "length"))
+          (cond [(symbol? f)
+                 (assert (eq? f 'length))
+                 ;; todo: shortest path routing
+                 (values 1
+                         'bicycle)]
+                [else
+                 (assert (list? f))
+                 (assert (eq? (car f) 'sport-preset))
+                 (apply sport-preset (cdr f))]))
+      (let ((render (assoc-ref `(("js"    . ,(cut google-directions-v3-out jscallback jsfilter jsgeom <>))
+                                 ("xml"   . ,render-xml)
+                                 ("sxml"  . ,render-sxml))
+                               format)))
+        (render (lambda()
+                  `(result
+                    (itdRouteList
+                     (itdRoute
+                      ,(wrap-osrm-route-2 context
+                                          timescale
+                                          profile
+                                          (group-pairwise (google-directions-query->track query))))))))))))
 
 ;; simple test
 ;; (wrap-osrm-route-2 '((8.983340995511963 . 48.52608311031189) (9.15725614289749 . 48.52975538424495)))
@@ -406,7 +420,8 @@
     ))
 
 (define (create-context al)
-  (let1 al (merge-headers `((osrm-service . ("localhost:5000" "/viaroute"))
+  (let1 al (merge-headers `((osrm-service . ((bicycle . ("localhost:5000" "/viaroute"))
+                                             (foot . ("localhost:5001" "/viaroute"))))
                             (waydb-file . "../build/data/test.ways.dbm"))
                           al)
     (alist->hash-table (acons 'db (dbm-open <gdbm> :path (assoc-ref al 'waydb-file) :rw-mode :read)
