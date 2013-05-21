@@ -3,7 +3,7 @@
 PATH="/usr/bin:/bin"
 export PATH
 cd /usr/local/lib/osrm-unstable/apiwrapper
-exec gosh -I. -- $0 "$@"
+exec gosh -Ftokyocabinet -I. -- $0 "$@"
 |#
 
 (use osrm-wrapper)

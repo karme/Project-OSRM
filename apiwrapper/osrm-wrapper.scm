@@ -31,10 +31,20 @@
   (use www.fastcgi)
   (use routing)
   (use osrm-client)
-  (use dbm.gdbm)
+  (cond-expand
+   (tokyocabinet
+    (use dbm.tokyocabinet))
+   (else
+    (use dbm.gdbm)))
   (export wrap-osrm-main))
 
 (select-module osrm-wrapper)
+
+(cond-expand
+ (tokyocabinet
+  (define *dbclass* <tcbdb>))
+ (else
+  (define *dbclass* <gdbm>)))
 
 (define (s->min x)
   (/. x 60))
@@ -424,7 +434,7 @@
                                              (foot . ("localhost:5001" "/viaroute"))))
                             (waydb-file . "../build/data/test.ways.dbm"))
                           al)
-    (alist->hash-table (acons 'db (dbm-open <gdbm> :path (assoc-ref al 'waydb-file) :rw-mode :read)
+    (alist->hash-table (acons 'db (dbm-open *dbclass* :path (assoc-ref al 'waydb-file) :rw-mode :read)
                               al))))
 
 (define (wrap-osrm-main config . args)
