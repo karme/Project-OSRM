@@ -90,7 +90,7 @@ msg "C) calculate way splits (depends on A, todo: could be merged with B)"
 pv $MYTMPDIR/osm_as_sxml.scm|grep '^(way'|./parallel-pipe.scm $(cpus) read-line print-line read-line print ./way-splits.scm $MYTMPDIR/real-nodes.dbm |./store-way-splits.scm "$(cat $MYTMPDIR/max-id.out)" $MYTMPDIR/way-splits.dbm
 
 msg "D) parse relations (todo: could be pipelined)"
-pv $MYTMPDIR/osm_as_sxml.scm|grep '^(relation'|./relations.scm $MYTMPDIR/way-relation.dbm $MYTMPDIR/relation.dbm
+pv $MYTMPDIR/osm_as_sxml.scm|{ grep '^(relation' || true; }|./relations.scm $MYTMPDIR/way-relation.dbm $MYTMPDIR/relation.dbm
 } >&2
 
 msg "E) drop unused nodes, apply way splits, profile ways, denormalize relations, fix way references in restriction relations, transform sxml to xml"
