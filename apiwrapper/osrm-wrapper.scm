@@ -63,31 +63,26 @@
 
 ;; (reverse-4d '((x1 y1 z1 0) (x2 y2 z2 1) (x3 y3 z3 3) (x4 y4 z4 100)))
 
-;; todo: i already have a better implementation somewhere?!
-(define (merge-polyline-4d-2 a b)
-  (cond [(null? a)
-         b]
-        [(null? b)
-         a]
-        [else
-         (assert (zero? (last (car a))))
-         (assert (zero? (last (car b))))
-         (assert (equal? (subseq (last a) 0 3) (subseq (car b) 0 3)))
-         (append a
-                 (let1 l (last (last a))
-                   (adjust-polyline-4d-offset b l)))])) ;; todo: cdr b?!
-
-;; (let ((b '((9.0567383 48.5198042 423.1379008383598 0.0) (9.0568301 48.5197476 423.12746733354504 9.252167970969891) (9.0571689 48.5196919 423.1433522297799 35.035282356543675) (9.057403063097688 48.519664611762614 423.1587945691838 52.59770999429127)))
-;;       (a '((9.057039407261255 48.51971318909548 423.13728086402386 0.0) (9.0571689 48.5196919 423.1433522297799 9.85456344503482) (9.0577773 48.519621 423.18347434716765 55.485070900249205) (9.0577773 48.519621 423.18347434716765 55.485070900249205))))
-;;   #?=(last a)
-;;   #?=(car b)
-;;   (merge-polyline-4d-2 a b))
-
+(define (merge-polyline-4d-2 . l)
+  (if (null? l)
+    l
+    (reverse!
+     (fold (lambda(npl rpl)
+             (assert (not (null? rpl)))
+             (assert (not (null? npl)))
+             (assert (equal? (subseq (car rpl) 0 3) (subseq (car npl) 0 3)))
+             (let1 offset (last (car rpl))
+               (fold (lambda(p o)
+                       (cons (let1 p (reverse p)
+                               (reverse! (cons (+ (car p) offset) (cdr p))))
+                             o))
+                     rpl
+                     (cdr npl))))
+           (reverse (car l))
+           (cdr l))))))))
+  
 (define (merge-polyline-4d . l)
-  (fold (lambda(n o)
-          (merge-polyline-4d-2 o n))
-        '()
-        l))
+  (apply merge-polyline-4d-2 (filter (lambda(x) (not (null? x))) l)))
 
 (define (vec-lerp a b x)
   (map + a (map (cute * <> x) (map - b a))))
