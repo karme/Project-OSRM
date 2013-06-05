@@ -79,7 +79,7 @@
                      rpl
                      (cdr npl))))
            (reverse (car l))
-           (cdr l))))))))
+           (cdr l)))))
   
 (define (merge-polyline-4d . l)
   (apply merge-polyline-4d-2 (filter (lambda(x) (not (null? x))) l)))
