@@ -51,17 +51,22 @@
 
 ;; todo: i already have a better implementation somewhere?!
 (define (reverse-polyline-4d pl)
-  (if (< (size-of pl) 2)
+  (assert (list? pl))
+  (if (or (null? pl) (null? (cdr pl))) ;; (< (size-of pl) 2)
     pl
-    (reverse (fold2 (lambda(n1 n2 o1 o2)
-                      (values (cons (append n1 (list (+ o2 n2))) o1)
-                              (+ o2 n2)))
-                    '()
-                    0
-                    (fold (lambda(n o) (cons (permute n '(0 1 2)) o)) '() pl)
-                    (cons 0 (fold2 (lambda(n o1 o2) (values (cons (- (ref n 3) o2) o1) (ref n 3))) '() 0 pl))))))
+    (reverse! (fold2 (lambda(n1 n2 o1 o2)
+                       (let1 offset (+ o2 n2)
+                         (values (cons (list (car n1) (cadr n1) (caddr n1) offset) o1)
+                                 offset)))
+                     (list)
+                     0
+                     (reverse pl)
+                     (cons 0 (fold2 (lambda(n o1 o2) (values (cons (- (cadddr n) o2) o1) (cadddr n)))
+                                    '()
+                                    0
+                                    pl))))))
 
-;; (reverse-4d '((x1 y1 z1 0) (x2 y2 z2 1) (x3 y3 z3 3) (x4 y4 z4 100)))
+;; (reverse-polyline-4d '((x1 y1 z1 0) (x2 y2 z2 1) (x3 y3 z3 3) (x4 y4 z4 100)))
 
 (define (merge-polyline-4d-2 . l)
   (if (null? l)
@@ -185,30 +190,6 @@
     (cons start (range (+ start 1) stop))
     '()))
 
-;; todo: crap
-(define (polyline-4d-substring-2 pl from to)
-  (assert (<= from to))
-  (assert (>= from 0))
-  (assert (<= to 1))
-  (assert (zero? (last (car pl))))
-  (let ((from (* from (last (last pl))))
-        (to   (* to (last (last pl))))
-        (find-interval (lambda(x)
-                         (- (or (find-with-index (lambda(t) (> t x)) (map last pl))
-                                (size-of pl))
-                            1))))
-    (let ((beg (find-interval from))
-          (end (find-interval to)))
-      (let ((lerp-interval (lambda(i t)
-                             (if (>= i (- (size-of pl) 1))
-                               (last pl)
-                               (vec-lerp (ref pl i) (ref pl (+ i 1))
-                                         (/ (- t (ref* pl i 3))
-                                            (- (ref* pl (+ i 1) 3) (ref* pl i 3))))))))
-        (cons (lerp-interval beg from)
-              (append (map (cute ref pl <>) (range (+ beg 1) (+ end 1)))
-                      (list (lerp-interval end to))))))))
-
 (define (polyline-4d-length pl)
   (assert (zero? (last (car pl))))
   (last (last pl)))
@@ -221,6 +202,32 @@
              (let1 p (reverse p)
                (reverse (cons (+ (car p) o) (cdr p)))))
            pl))))
+
+;; todo: crap
+(define (polyline-4d-substring-2 pl from to)
+  (assert (<= from to))
+  (assert (>= from 0))
+  (assert (<= to 1))
+  (assert (or (null? pl) (zero? (last (car pl)))))
+  (if (and (zero? from) (= 1 to)) ;; shortcut simple case
+    pl
+    (let ((from (* from (last (last pl))))
+          (to   (* to (last (last pl))))
+          (find-interval (lambda(x)
+                           (- (or (find-with-index (lambda(t) (> t x)) (map last pl))
+                                  (size-of pl))
+                              1))))
+      (let ((beg (find-interval from))
+            (end (find-interval to)))
+        (let ((lerp-interval (lambda(i t)
+                               (if (>= i (- (size-of pl) 1))
+                                 (last pl)
+                                 (vec-lerp (ref pl i) (ref pl (+ i 1))
+                                           (/ (- t (ref* pl i 3))
+                                              (- (ref* pl (+ i 1) 3) (ref* pl i 3))))))))
+          (cons (lerp-interval beg from)
+                (append (map (cute ref pl <>) (range (+ beg 1) (+ end 1)))
+                        (list (lerp-interval end to)))))))))
 
 (define (polyline-4d-substring pl from to)
   (adjust-polyline-4d-offset
