@@ -240,27 +240,22 @@
 
 (define (wrap-osrm-route-2 context timescale profile points)
   ;; todo: maybe cache
-  (define (way-info id) (read-from-string (dbm-get (ref context 'db) id)))
+  (define (way-info id)
+    (read-from-string (dbm-get (ref context 'db) id)))
 
-  (define (way-geometry-2 id)
-    (assoc-ref (way-info id) 'geom))
+  (define (way-geometry wi start end)
+    (polyline-4d-substring (assoc-ref wi 'geom) start end))
 
-  (define (way-geometry id start end)
-    (polyline-4d-substring (way-geometry-2 id) start end))
-
-  ;; todo: partial ways!
-  (define (way-speed id start end)
-    (/ ((if (<= start end)
-          car
-          cdr)
-        #?=(assoc-ref #?=(assoc-ref (way-info id) 'speed) #?=profile))
-       3.6))
-
-  ;; (with-output-to-file "/tmp/lastcall2"
+  ;; (with-output-to-file "/tmp/ids"
   ;;   (lambda()
-  ;;     (write `(wrap-osrm-route-2 ',context ',points))))
+  ;;     (print "--"))
+  ;;   :if-exists :append)
+
+  ;; (with-output-to-file (string-append "/tmp/lastcall2" (sys-uid->user-name (sys-getuid)))
+  ;;   (lambda()
+  ;;     (write `(wrap-osrm-route-2 ',context ',timescale ',profile ',points))))
   
-  (let1 r (osrm-route points '() (assoc-ref (ref context 'osrm-service) profile))
+  (let1 r (time (osrm-route points '() (assoc-ref (ref context 'osrm-service) profile)))
     ;; todo: catch other errors!
     (when (and (= (assoc-ref r "status") 207)
                (equal? "Cannot find route between points" (assoc-ref r "status_message")))
@@ -268,17 +263,17 @@
     ;; (write r)
     ;; (newline)
     (let* ((way-list (map (lambda(x)
-                            (cons (ref x 0)
-                                  (if (odd? (ref x 1)) ;; forward or backward?
-                                    '(0 1)
-                                    '(1 0))))
+                            (cons (vector-ref x 0)
+                                  (if (odd? (vector-ref x 1)) ;; forward or backward?
+				      '(0 1)
+				      '(1 0))))
                           (assoc-ref r "segments")))
            (start-linref (list (start-way-id r)
-                               (linref (way-geometry (start-way-id r) 0 1)
+                               (linref (way-geometry (way-info (start-way-id r)) 0 1)
                                        (start-segment r)
                                        (ref (assoc-ref r "phantomratios") 0))))
            (end-linref (list (end-way-id r)
-                             (linref (way-geometry (end-way-id r) 0 1)
+                             (linref (way-geometry (way-info (end-way-id r)) 0 1)
                                      (end-segment r)
                                      (ref (assoc-ref r "phantomratios") 1)))))
       (assert (< (apply max (append (map (compose abs -) (calculate-start r) (start-point r))
@@ -296,15 +291,30 @@
                                             (list (list (ref end-linref 0)
                                                         (ref (last way-list) 1)
                                                         (ref end-linref 1)))))]))
-             (ways (map (lambda(l) (apply way-geometry l)) way-list))
-             (speeds (map (lambda(l) (apply way-speed l)) way-list))
+             (way-infos (map (lambda(l) (way-info (car l))) way-list))
+             (ways (map (lambda(l wi) (way-geometry wi (cadr l) (caddr l)))
+			way-list way-infos))
+             (speeds (map (lambda(l i)
+			    (let ((start (cadr l))
+				  (end (caddr l)))
+			      ;; todo: partial ways
+			      (/ ((if (<= start end)
+				      car
+				      cdr)
+				  (assoc-ref (assoc-ref i 'speed) profile))
+				 3.6)))
+			  way-list way-infos))
              (total-time (*. (apply + (map (lambda(s v)
-                                             (assert (> v 0))
-                                             (/ s v))
-                                           (map polyline-4d-length ways)
-                                           speeds))
-                             timescale))
-             (geometry (apply merge-polyline-4d ways)))
+						   (assert (> v 0))
+						   (/ s v))
+						 (map polyline-4d-length ways)
+						 speeds))
+				   timescale))
+             (geometry (begin
+			 ;; (with-output-to-file (string-append "/tmp/merge" (sys-uid->user-name (sys-getuid)))
+			 ;;   (lambda()
+			 ;;     (write `(apply merge-polyline-4d ',ways))))
+			 (apply merge-polyline-4d ways))))
         ;; (write geometry)
         ;; (newline)
         (let1 pr (make-partial-route
@@ -315,13 +325,19 @@
           #?=(list total-time (assoc-ref (assoc-ref r "route_summary") "total_time"))
           ;; compare osm distance vs our distance
           ;; #?=(list (assoc-ref (assoc-ref r "route_summary") "total_distance") (partial-route-length pr))
-          (append pr `((waylist . ,(map (lambda(w)
-                                          `(way (@ (id ,(car w))
-                                                   (from ,(number->string (cadr w)))
-                                                   (to ,(number->string (caddr w))))))
-                                        way-list)))))))))
+          ;; (append pr (if #f
+	  ;; 		 `((waylist . ,(map (lambda(w)
+	  ;; 				      `(way (@ (id ,(car w))
+	  ;; 					       (from ,(number->string (cadr w)))
+	  ;; 					       (to ,(number->string (caddr w))))))
+	  ;; 				    way-list)))
+	  ;; 		 '()))
+	  pr)))))
 
 ;; some test
+;; (time (car (wrap-osrm-route-2 *context* 1.0 'foot '((12.0 . 47.0) (9.0 . 50.0)))))
+;; (time (car (wrap-osrm-route-2 *context* 1.0 'foot '((13.78 . 41.75) (9.26 . 54.75)))))
+;; (wrap-osrm-route-2 *context* 1.0 'foot '((9.056513613489894 . 48.520302993378365) (9.06195045150861 . 48.51884638248705)))
 ;; (wrap-osrm-route-2 (create-context '()) '((9.056513613489894 . 48.520302993378365) (9.06195045150861 . 48.51884638248705)))
 ;; only one way test
 ;; (wrap-osrm-route-2 (create-context '()) '((9.057477104737538 . 48.51966197480457) (9.057076304500677 . 48.51970535679522)))
