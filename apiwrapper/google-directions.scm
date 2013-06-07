@@ -388,7 +388,7 @@
                                                    '(1 0 2)
                                                    (cdr jsgeom)))
                                        (fl (map (cut format-number-fixed-point <>)
-                                                '(4 4 1 2))) ;; todo: allow to change via jsgeom? or use slib format? no not now
+                                                '(6 6 1 2))) ;; todo: allow to change via jsgeom? or use slib format? no not now
                                        (format-numbers (lambda(p)
                                                          (map-with-index
                                                           (lambda(idx f)
