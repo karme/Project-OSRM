@@ -90,7 +90,7 @@
         [else (write num)]))
 
 ;; uh - quite ugly - and likely does not conform to spec
-(define (print-string str)
+(define (print-string-old str)
   (display
    (string-append
     "\""
@@ -103,6 +103,21 @@
       str)
      "")
     "\"")))
+
+;; newer upstream version from gauche
+(define (print-string str)
+  (define specials
+    '((#\" . #\") (#\\ . #\\) (#\x08 . #\b) (#\page . #\f)
+      (#\newline . #\n) (#\return . #\r) (#\tab . #\t)))
+  (define (print-char c)
+    (cond [(assv c specials) => (^p (write-char #\\) (write-char (cdr p)))]
+          [(and (char-set-contains? char-set:ascii c)
+                (not (eq? (char-general-category c) 'Cc)))
+           (write-char c)]
+          [else (format #t "\\u~4,'0x" (char->ucs c))]))
+  (display "\"")
+  (string-for-each print-char str)
+  (display "\""))
 
 (define (->jsonf x . args)
   (let-optionals* args ((format '()))
