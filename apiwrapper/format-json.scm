@@ -104,15 +104,14 @@
      "")
     "\"")))
 
-;; newer upstream version from gauche
+;; based on newer upstream version from gauche
 (define (print-string str)
   (define specials
     '((#\" . #\") (#\\ . #\\) (#\x08 . #\b) (#\page . #\f)
       (#\newline . #\n) (#\return . #\r) (#\tab . #\t)))
   (define (print-char c)
     (cond [(assv c specials) => (^p (write-char #\\) (write-char (cdr p)))]
-          [(and (char-set-contains? char-set:ascii c)
-                (not (eq? (char-general-category c) 'Cc)))
+          [(char-set-contains? #[ -~] c)
            (write-char c)]
           [else (format #t "\\u~4,'0x" (char->ucs c))]))
   (display "\"")
