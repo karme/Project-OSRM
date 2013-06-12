@@ -404,22 +404,22 @@
         (jsgeom (cgi-get-parameter "jsgeom" params))
         (format (cgi-get-parameter "format" params :default "js"))
         (query (cgi-get-parameter "q" params)))
-    (receive (timescale profile)
-        (let1 f (safer-read-from-string (cgi-get-parameter "costff" params :default "length"))
-          (cond [(symbol? f)
-                 (assert (eq? f 'length))
-                 ;; todo: shortest path routing
-                 (values 1
-                         'bicycle)]
-                [else
-                 (assert (list? f))
-                 (assert (eq? (car f) 'sport-preset))
-                 (apply sport-preset (cdr f))]))
-      (let ((render (assoc-ref `(("js"    . ,(cut google-directions-v3-out jscallback jsfilter jsgeom <>))
-                                 ("xml"   . ,render-xml)
-                                 ("sxml"  . ,render-sxml))
-                               format)))
-        (render (lambda()
+    (let ((render (assoc-ref `(("js"    . ,(cut google-directions-v3-out jscallback jsfilter jsgeom <>))
+                               ("xml"   . ,render-xml)
+                               ("sxml"  . ,render-sxml))
+                             format)))
+      (render (lambda()
+                (receive (timescale profile)
+                    (let1 f (safer-read-from-string (cgi-get-parameter "costff" params :default "length"))
+                      (cond [(symbol? f)
+                             (assert (eq? f 'length))
+                             ;; todo: shortest path routing
+                             (values 1
+                                     'bicycle)]
+                            [else
+                             (assert (list? f))
+                             (assert (eq? (car f) 'sport-preset))
+                             (apply sport-preset (cdr f))]))
                   `(result
                     (itdRouteList
                      (itdRoute
