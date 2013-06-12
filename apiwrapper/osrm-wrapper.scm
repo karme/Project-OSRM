@@ -382,6 +382,7 @@
 
 ;; todo
 (define *presets* '((hikingTourTrail . ((vstd . 4) (profile . foot)))
+                    (cityTrail . ((vstd . 4) (profile . foot)))
                     (cycling . ((vstd . 15) (profile . bicycle)))
                     (default . ((vstd . 15) (profile . bicycle)))))
 
