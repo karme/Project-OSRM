@@ -22,7 +22,7 @@ PATH=/sbin:/usr/sbin:/bin:/usr/bin
 DESC="osrm service"
 NAME=osrm
 DAEMON=/usr/bin/daemon
-DAEMON_ARGS="-r -D /usr/local/lib/osrm --user=osrm --name=$NAME --command=/usr/local/lib/osrm/osrm-routed --inherit --output=daemon.err"
+DAEMON_ARGS="-r -D /usr/local/lib/osrm --user=osrm --name=$NAME --command=/usr/local/lib/osrm/build/osrm-routed --inherit --output=daemon.err"
 SCRIPTNAME=/etc/init.d/$NAME
 
 # Exit if the package is not installed
