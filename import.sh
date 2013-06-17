@@ -48,7 +48,7 @@ test -f ${OUTDIR}/$X.cut.osm.bz2 || pv ${OUTDIR}/$X.osm.bz2|pbzip2 -d|osmosis --
 
 pushd waysplit
 # note: $X.split.osm.bz2 only for debugging
-time ./waysplit.sh ${OUTDIR}/$X.cut.osm.bz2 ${OUTDIR}/${X}.ways.dbm |tee >(pbzip2 > ${OUTDIR}/$X.split.osm.bz2)|osmosis --read-xml - --write-pbf ${OUTDIR}/$X.osm.pbf omitmetadata=true
+time ./waysplit.sh ${OUTDIR}/$X.cut.osm.bz2 ${OUTDIR}/${X}.ways.dbm ${OUTDIR}/${X}.sql.bz2 |tee >(pbzip2 > ${OUTDIR}/$X.split.osm.bz2)|osmosis --read-xml - --write-pbf ${OUTDIR}/$X.osm.pbf omitmetadata=true
 popd
 
 for P in $PROFILES; do
