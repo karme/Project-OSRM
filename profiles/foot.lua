@@ -164,7 +164,7 @@ function way_function (way)
     end
 
     -- elevation
-    local elevation_profile = Elevation.parse_profile(way.tags:Find("profile"))
+    local elevation_profile = Elevation.parse_profile(way.tags:Find("geometry"))
     if elevation_profile then
        local speed_scale_fwd, speed_scale_bwd = Elevation.speed_scales(elevation_profile)
        scale_way_speeds(way, speed_scale_fwd, speed_scale_bwd)

@@ -85,7 +85,7 @@ function parse_profile(s)
          for j in string.gmatch(i, "[^%,]+") do
             table.insert(p,j)
          end
-         table.insert(r,p)
+         table.insert(r,{p[4],p[3]})
       end
       return r
    end

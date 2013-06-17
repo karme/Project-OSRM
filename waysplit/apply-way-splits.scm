@@ -213,11 +213,10 @@
                " "))
 
 (define (way-add-geometry expr pl-4d)
-  (let ((profile (map (cute permute <> '(3 2)) pl-4d)) ;; todo: maybe apply douglas-peucker
-        (way-length (number->string (last (last pl-4d)))))
+  (let ((way-length (number->string (last (last pl-4d)))))
     ;; (sxml:add-attr expr (list 'pl pl))
-    (append expr `((tag (@ (k "profile") (v ,(polyline->string profile))))
-                   (tag (@ (k "length") (v ,way-length)))
+    (append expr `((tag (@ (k "length") (v ,way-length)))
+                   ;; todo: maybe apply douglas-peucker
                    (tag (@ (k "geometry") (v ,(polyline->string pl-4d))))))))
 
 (define (main args)
