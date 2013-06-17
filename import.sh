@@ -12,8 +12,9 @@ test -z "$OUTDIR" && OUTDIR=$PWD/build/data
 
 #URL="http://planet.openstreetmap.org/planet/planet-latest.osm.bz2"
 #URL="http://download.geofabrik.de/openstreetmap/europe.osm.bz2"
+URL="http://download.geofabrik.de/europe/germany-latest.osm.bz2"
 #URL="http://download.geofabrik.de/openstreetmap/europe/germany/baden-wuerttemberg.osm.bz2"
-URL="http://download.geofabrik.de/openstreetmap/europe/germany/baden-wuerttemberg/tuebingen-regbez.osm.bz2"
+#URL="http://download.geofabrik.de/openstreetmap/europe/germany/baden-wuerttemberg/tuebingen-regbez.osm.bz2"
 PROFILES="foot bicycle"
 
 #renice 20 -p $$
@@ -29,6 +30,7 @@ test -f ${OUTDIR}/$X.osm.bz2 || { wget -O ${OUTDIR}/$X.osm.bz2 "$URL" && rm -vf 
 
 # download poly files
 test -f ${OUTDIR}/europe.poly || wget -O ${OUTDIR}/europe.poly "https://raw.github.com/MaZderMind/osm-history-splitter/master/clipbounds/europe.poly"
+test -f ${OUTDIR}/germany.poly || wget -O ${OUTDIR}/germany.poly "http://download.geofabrik.de/europe/germany.poly"
 test -f ${OUTDIR}/bw.poly || wget -O ${OUTDIR}/bw.poly "https://raw.github.com/MaZderMind/osm-history-splitter/master/clipbounds/europe/germany/baden-wuerttemberg.poly"
 # create poly file
 { cat <<EOF
