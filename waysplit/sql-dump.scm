@@ -70,7 +70,7 @@
                            (set! first #f)
                            ""]
                           [else
-                           ","])
+                           ",\n"])
                     "("
                     (way-id expr)
                     ",'"
@@ -89,6 +89,6 @@
                                                 (list (ref tags #`"osrm:,|profile|:fwd:cost" "0")
                                                       (ref tags #`"osrm:,|profile|:bwd:cost" "0")))
                                               *profiles*))
-                    ")\n"))))])))
+                    ")"))))])))
   (print ";")
   0)
