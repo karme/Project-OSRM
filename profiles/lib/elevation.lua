@@ -56,10 +56,10 @@ end
 
 -- input: 2d pl (d,z)
 -- output: average speed (scale) and length
-local function avg_speed_and_length_2d(pl2d)
+local function avg_speed_and_length_2d(pl2d, gs)
    local l=0+last(pl2d)[1]
    local dzs=dz(pl2d)
-   local speeds=map(gradient_speed, map(function(x) return x[2]/x[1] end, dzs))
+   local speeds=map(gs or gradient_speed, map(function(x) return x[2]/x[1] end, dzs))
    local time=0
    for i=1,table.maxn(speeds) do
       time=time+dzs[i][1]/speeds[i]
@@ -67,9 +67,9 @@ local function avg_speed_and_length_2d(pl2d)
    return l/time,l
 end
 
-function speed_scales(elevation_profile)
-   local speed_scale_fwd = avg_speed_and_length_2d(elevation_profile)
-   local speed_scale_bwd = avg_speed_and_length_2d(reverse_dz(elevation_profile))
+function speed_scales(elevation_profile, gradient_speedf)
+   local speed_scale_fwd = avg_speed_and_length_2d(elevation_profile, gradient_speedf)
+   local speed_scale_bwd = avg_speed_and_length_2d(reverse_dz(elevation_profile, gradient_speedf))
    -- print('fwd='..speed_scale_fwd..' bwd='..speed_scale_bwd)
    return speed_scale_fwd, speed_scale_bwd
 end

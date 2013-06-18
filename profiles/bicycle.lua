@@ -183,6 +183,17 @@ local function way_is_cycleway(way, forwardp)
    return (cycleway and cycleway_tags[cycleway]) or (forwardp and cycleway_right and cycleway_tags[cycleway_right]) or ((not forwardp) and cycleway_left and cycleway_tags[cycleway_left]) or way_is_part_of_cycle_route(way,forwardp)
 end
 
+-- simple speed (scaling) function depending on gradient
+-- input: gradient
+-- output: speed
+local function bicycle_gradient_speed(g)
+   if g>0 then
+      return math.max(1/15,1-90/15*g)
+   else
+      return math.min(50/15,1-72/15*g)
+   end
+end
+
 function way_function (way)
 	-- initial routability check, filters out buildings, boundaries, etc
 	local highway = way.tags:Find("highway")
@@ -367,7 +378,7 @@ function way_function (way)
     -- elevation
     local elevation_profile = Elevation.parse_profile(way.tags:Find("geometry"))
     if elevation_profile then
-       local speed_scale_fwd, speed_scale_bwd = Elevation.speed_scales(elevation_profile)
+       local speed_scale_fwd, speed_scale_bwd = Elevation.speed_scales(elevation_profile, bicycle_gradient_speed)
        scale_way_speeds(way, speed_scale_fwd, speed_scale_bwd)
     end
 

@@ -77,6 +77,17 @@ function node_function (node)
     return true
 end
 
+-- simple speed (scaling) function depending on gradient
+-- input: gradient
+-- output: speed
+local function foot_gradient_speed(g)
+   if g>0 then
+      return math.max(1/4.2,1-3*g)
+   else
+      return math.max(1/4.2,1+1.4*g)
+   end
+end
+
 function way_function (way)
 
     -- First, get the properties of each way that we come across
@@ -166,7 +177,7 @@ function way_function (way)
     -- elevation
     local elevation_profile = Elevation.parse_profile(way.tags:Find("geometry"))
     if elevation_profile then
-       local speed_scale_fwd, speed_scale_bwd = Elevation.speed_scales(elevation_profile)
+       local speed_scale_fwd, speed_scale_bwd = Elevation.speed_scales(elevation_profile, foot_gradient_speed)
        scale_way_speeds(way, speed_scale_fwd, speed_scale_bwd)
     end
 
