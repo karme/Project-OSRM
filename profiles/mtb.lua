@@ -390,7 +390,8 @@ function way_function (way)
     -- for now use a hack (note: this only works with the fake way!)
     way.forward.realspeed = way.forward.speed
     way.backward.realspeed = way.backward.speed
-    scale_way_speeds(way, way_is_cycleway(way,true) and 1 or 0.5, way_is_cycleway(way,false) and 1 or 0.5)
+    -- mtb doesn't prefer cycleways
+    -- scale_way_speeds(way, way_is_cycleway(way,true) and 1 or 0.5, way_is_cycleway(way,false) and 1 or 0.5)
     	
     -- adjust mode for direction
     if way.forward.mode > 0 then
