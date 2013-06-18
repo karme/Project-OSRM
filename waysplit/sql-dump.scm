@@ -61,35 +61,34 @@
     (until (read) eof-object? => expr
            (case (car expr)
              [(way)
-              (let1 tags (way-tags expr)
-                (write-tree
-                 (list
-                  (cond [first
-                         (set! first #f)
-                         ""]
-                        [else
-                         ","])
-                  "("
-                  (way-id expr)
-                  ",'"
-                  (let1 geometry (string-split (ref tags "geometry") " ")
-                    (if (>= (size-of geometry) 2)
-                      (apply ewkt-line (cons 3857
-                                             (map (lambda(p)
-                                                    (let1 r (string-split p ",")
-                                                      (geographic->epsg3857
-                                                       (map x->number
-                                                            (list (car r) (cadr r))))))
-                                                  geometry)))
-                      ""))
-                  "',"
-                  (intersperse ","
-                               (append-map! (lambda(profile)
-                                              ;; todo: maybe use 'Infinity'::double precision instead of 0
-                                              ;; but then fix the lua code first! (it already returns 0)
-                                              (list (ref tags #`"osrm:,|profile|:fwd:cost" "0")
-                                                    (ref tags #`"osrm:,|profile|:bwd:cost" "0")))
-                                            *profiles*))
-                  ")")))])))
+              (let* ((tags (way-tags expr))
+                     (geometry (string-split (ref tags "geometry") " ")))
+                (when (>= (size-of geometry) 2)
+                  (write-tree
+                   (list
+                    (cond [first
+                           (set! first #f)
+                           ""]
+                          [else
+                           ","])
+                    "("
+                    (way-id expr)
+                    ",'"
+                    (apply ewkt-line (cons 3857
+                                           (map (lambda(p)
+                                                  (let1 r (string-split p ",")
+                                                    (geographic->epsg3857
+                                                     (map x->number
+                                                          (list (car r) (cadr r))))))
+                                                geometry)))
+                    "',"
+                    (intersperse ","
+                                 (append-map! (lambda(profile)
+                                                ;; todo: maybe use 'Infinity'::double precision instead of 0
+                                                ;; but then fix the lua code first! (it already returns 0)
+                                                (list (ref tags #`"osrm:,|profile|:fwd:cost" "0")
+                                                      (ref tags #`"osrm:,|profile|:bwd:cost" "0")))
+                                              *profiles*))
+                    ")\n"))))])))
   (print ";")
   0)
