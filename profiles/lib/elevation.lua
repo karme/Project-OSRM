@@ -75,7 +75,7 @@ function speed_scales(elevation_profile)
 end
 
 function parse_profile(s)
-   if s == '' then
+   if not s or s == '' then
       return false
    else
       -- print(s)
