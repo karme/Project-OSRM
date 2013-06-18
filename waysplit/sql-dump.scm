@@ -15,7 +15,7 @@
                           (cute map (lambda(tag) (cons (sxml:attr tag 'k) (sxml:attr tag 'v))) <>)
                           (sxpath '(tag))))
 
-(define *profiles* '(foot bicycle))
+(define *profiles* '(foot bicycle mtb))
 
 (define (ewkt-line srid . line)
   (assert (number? srid))

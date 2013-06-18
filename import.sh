@@ -15,7 +15,7 @@ test -z "$OUTDIR" && OUTDIR=$PWD/build/data
 URL="http://download.geofabrik.de/europe/germany-latest.osm.bz2"
 #URL="http://download.geofabrik.de/openstreetmap/europe/germany/baden-wuerttemberg.osm.bz2"
 #URL="http://download.geofabrik.de/openstreetmap/europe/germany/baden-wuerttemberg/tuebingen-regbez.osm.bz2"
-PROFILES="foot bicycle"
+PROFILES="foot bicycle mtb"
 
 #renice 20 -p $$
 #ionice -c 3 -p $$

@@ -20,6 +20,8 @@
                           (cute map (lambda(tag) (cons (sxml:attr tag 'k) (sxml:attr tag 'v))) <>)
                           (sxpath '(tag))))
 
+(define *profiles* '(foot bicycle mtb))
+
 (define (main args)
   (let-optionals* (cdr args) ((db-file "ways.dbm"))
     (let ((db (dbm-open *dbclass* :path db-file :rw-mode :write)))
@@ -36,7 +38,7 @@
                                                                  (cons profile
                                                                        (cons (string->number (ref tags #`"osrm:,|profile|:fwd:speed" "0"))
                                                                              (string->number (ref tags #`"osrm:,|profile|:bwd:speed" "0")))))
-                                                               '(foot bicycle)))))))]))
+                                                               *profiles*))))))]))
        (dbm-close db))))
   0)
 

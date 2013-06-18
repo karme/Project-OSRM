@@ -41,6 +41,8 @@
 (use lua)
 (use gauche.process)
 
+(define *profiles* '(foot bicycle mtb))
+
 (define z (dem-stack->xy->z*))
 (define upsample-polyline->4d (get-upsample-polyline->4d z))
 
@@ -256,7 +258,7 @@
                          (lua-luise `(funcall dofile ,(lua-file (symbol->string profile))))
                          (assert (= (lua-luise '(funcall set_lowest_bit 2 1)) 3))
                          (cons profile lua-luise)))
-                     '(foot bicycle))))
+                     *profiles*)))
       (let* ((node-pos-get (assoc-ref node-pos-map 'get)))
         (until (read) eof-object? => expr
                (output-result
