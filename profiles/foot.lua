@@ -1,5 +1,6 @@
 -- Foot profile
 -- todo: maybe better call it hiking profile?!
+require("lib/access")
 require("lib/elevation")
 require("lib/util")
 
@@ -9,7 +10,7 @@ bollards_whitelist = { [""] = true, ["cattle_grid"] = true, ["border_control"] =
 access_tag_whitelist = { ["yes"] = true, ["foot"] = true, ["permissive"] = true, ["designated"] = true  }
 access_tag_blacklist = { ["no"] = true, ["private"] = true, ["agricultural"] = true, ["forestery"] = true }
 access_tag_restricted = { ["destination"] = true, ["delivery"] = true }
-access_tags = { "foot", "access" }
+access_tags_hierachy = { "foot", "access" }
 service_tag_restricted = { ["parking_aisle"] = true }
 ignore_in_grid = { ["ferry"] = true }
 restriction_exception_tags = { "foot" }
@@ -143,19 +144,11 @@ function way_function (way)
         return false
     end
 
-    -- Check if we are allowed to access the way
-    if access_tag_blacklist[access] and access_tag_blacklist[access] then
-        return false
+	-- access
+ 	local access = Access.find_access_tag(way, access_tags_hierachy)
+    if access_tag_blacklist[access] then
+		return false
     end
-
-    -- Check if our vehicle types are forbidden
-    for i,v in ipairs(access_tags) do 
-        local mode_value = way.tags:Find(v)
-        if mode_value and "no"==mode_value then
-            return 0;
-        end
-    end
-
 
     way.name = ''..way.id
     way.forward.mode = 1*2
@@ -187,8 +180,13 @@ function way_function (way)
             way.backward.mode = 1*2
             way.forward.speed = speed_profile[highway]
             way.backward.speed = speed_profile[highway]
+        -- ugly specialcase for cycleway
+        elseif highway == "cycleway" and access_tag_whitelist[access] then
+            way.forward.mode = 1*2
+            way.backward.mode = 1*2
+            way.forward.speed = 5
+            way.backward.speed = 5
         end
-        
         -- ignore oneway, but respect oneway:foot
         if onewayClass=="yes" or onewayClass=="1" or onewayClass=="true" then
             way.backward.mode = 0
