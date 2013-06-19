@@ -1,4 +1,5 @@
 -- Foot profile
+-- todo: maybe better call it hiking profile?!
 require("lib/elevation")
 require("lib/util")
 
@@ -40,7 +41,7 @@ take_minimum_of_speeds 	= true
 obey_oneway 			= true
 obey_bollards 			= false
 use_restrictions 		= false
-ignore_areas 			= true -- future feature
+ignore_areas 			= false -- future feature
 traffic_signal_penalty 	= 2
 u_turn_penalty 			= 2
 use_turn_restrictions   = false
@@ -75,6 +76,36 @@ function node_function (node)
         end
     end
     return true
+end
+
+-- note: very similar to way_is_part_of_cycle_route
+local function way_is_part_of_foot_route(way, forwardp)
+   local i=0
+   local rel_type
+   while true do
+      -- note: assumes all denormalized relations have a non-empty type tag
+      -- at the moment the denormalization preprocessing filters for route types
+      rel_type=way.tags:Find("rel["..i.."][type]")
+      if rel_type == '' then break end
+      if rel_type=='route' then
+         local route=way.tags:Find("rel["..i.."][route]")
+         if route=='foot' or route=='hiking' then
+            local role=way.tags:Find("rel["..i.."]:role")
+            if role == '' or ((fowardp and role=='forward')) or ((not forwardp) and role=='backward') then
+               return true
+            end
+         end
+      end
+      i=i+1
+   end
+   return false
+end
+
+local function way_is_footway(way, forwardp)
+   -- todo: improve
+   -- see also:
+   -- 
+   return way_is_part_of_foot_route(way, forwardp)
 end
 
 -- simple speed (scaling) function depending on gradient
@@ -183,12 +214,12 @@ function way_function (way)
 
     -- todo: maxspeed?
 
-    -- todo: prefer walk ways?!
-
+    -- prefer walk ways
     -- todo: we want to adjust the cost function here / not the time/speed function
     -- for now use a hack (note: this only works with the fake way!)
     way.forward.realspeed = way.forward.speed
     way.backward.realspeed = way.backward.speed
+    scale_way_speeds(way, way_is_footway(way,true) and 1 or 0.5, way_is_footway(way,false) and 1 or 0.5)
 
     -- adjust mode for direction
     if way.forward.mode > 0 then
