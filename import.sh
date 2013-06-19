@@ -43,6 +43,18 @@ none
 END
 END
 EOF
+} > ${OUTDIR}/tuemini.poly
+
+{ cat <<EOF
+none
+1
+    8.77 48.59
+    8.77 48.44
+    9.33 48.44
+    9.33 48.59
+END
+END
+EOF
 } > ${OUTDIR}/tue.poly
 
 # cut out poly using osmosis
