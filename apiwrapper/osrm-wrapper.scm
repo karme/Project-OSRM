@@ -384,6 +384,7 @@
 (define *presets* '((hikingTourTrail . ((vstd . 4) (profile . foot)))
                     (cityTrail . ((vstd . 4) (profile . foot)))
                     (cycling . ((vstd . 15) (profile . bicycle)))
+                    (mountainbiking . ((vstd . 12) (profile . mtb)))
                     (default . ((vstd . 15) (profile . bicycle)))))
 
 (define (sport-preset preset . args)
@@ -450,7 +451,8 @@
 
 (define (create-context al)
   (let1 al (merge-headers `((osrm-service . ((bicycle . ("localhost:5000" "/viaroute"))
-                                             (foot . ("localhost:5001" "/viaroute"))))
+                                             (foot . ("localhost:5001" "/viaroute"))
+                                             (mtb . ("localhost:5002" "/viaroute"))))
                             (waydb-file . "../build/data/test.ways.dbm"))
                           al)
     (alist->hash-table (acons 'db (dbm-open *dbclass* :path (assoc-ref al 'waydb-file) :rw-mode :read)
