@@ -15,26 +15,28 @@ service_tag_restricted = { ["parking_aisle"] = true }
 ignore_in_grid = { ["ferry"] = true }
 restriction_exception_tags = { "foot" }
 
+default_speed = 4.2
+
 speed_profile = { 
-    ["primary"] = 5,
-    ["primary_link"] = 5,
-    ["secondary"] = 5,
-    ["secondary_link"] = 5,
-    ["tertiary"] = 5,
-    ["tertiary_link"] = 5,
-    ["unclassified"] = 5,
-    ["residential"] = 5,
-    ["road"] = 5,
-    ["living_street"] = 5,
-    ["service"] = 5,
-    ["track"] = 5,
-    ["path"] = 5,
-    ["steps"] = 5,
-    ["ferry"] = 5,
-    ["pedestrian"] = 5,
-    ["footway"] = 5,
-    ["pier"] = 5,
-    ["default"] = 5
+    ["primary"] = default_speed,
+    ["primary_link"] = default_speed,
+    ["secondary"] = default_speed,
+    ["secondary_link"] = default_speed,
+    ["tertiary"] = default_speed,
+    ["tertiary_link"] = default_speed,
+    ["unclassified"] = default_speed,
+    ["residential"] = default_speed,
+    ["road"] = default_speed,
+    ["living_street"] = default_speed,
+    ["service"] = default_speed,
+    ["track"] = default_speed,
+    ["path"] = default_speed,
+    ["steps"] = default_speed,
+    ["ferry"] = default_speed,
+    ["pedestrian"] = default_speed,
+    ["footway"] = default_speed,
+    ["pier"] = default_speed,
+    ["default"] = default_speed
 }
 
 
@@ -184,8 +186,8 @@ function way_function (way)
         elseif highway == "cycleway" and access_tag_whitelist[access] then
             way.forward.mode = 1*2
             way.backward.mode = 1*2
-            way.forward.speed = 5
-            way.backward.speed = 5
+            way.forward.speed = default_speed
+            way.backward.speed = default_speed
         end
         -- ignore oneway, but respect oneway:foot
         if onewayClass=="yes" or onewayClass=="1" or onewayClass=="true" then
