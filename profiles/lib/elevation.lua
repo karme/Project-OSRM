@@ -67,9 +67,10 @@ local function avg_speed_and_length_2d(pl2d, gs)
    return l/time,l
 end
 
+-- todo: could be simplified if we stay with simple gradient speed
 function speed_scales(elevation_profile, gradient_speedf)
    local speed_scale_fwd = avg_speed_and_length_2d(elevation_profile, gradient_speedf)
-   local speed_scale_bwd = avg_speed_and_length_2d(reverse_dz(elevation_profile, gradient_speedf))
+   local speed_scale_bwd = avg_speed_and_length_2d(reverse_dz(elevation_profile), gradient_speedf)
    -- print('fwd='..speed_scale_fwd..' bwd='..speed_scale_bwd)
    return speed_scale_fwd, speed_scale_bwd
 end
