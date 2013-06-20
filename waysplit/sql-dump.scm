@@ -1,5 +1,23 @@
 #| -*- mode: scheme; coding: utf-8; -*- |#
 :; exec gosh -I. -- $0 "$@"
+;;;
+;;; transform sxml to sql suitable for postgresql/postgis
+;;;
+;;; Copyright (C) 2013 Jens Thiele <karme@karme.de>
+;;;
+;;; This program is free software: you can redistribute it and/or modify
+;;; it under the terms of the GNU General Public License as published by
+;;; the Free Software Foundation, either version 3 of the License, or
+;;; (at your option) any later version.
+;;;
+;;; This program is distributed in the hope that it will be useful,
+;;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;;; GNU General Public License for more details.
+;;;
+;;; You should have received a copy of the GNU General Public License
+;;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+;;;
 
 (use sxml.adaptor) ;; for assert
 (use sxml.sxpath)
@@ -36,18 +54,32 @@
             (*. (log (tan (*. (+. 90 (cadr p)) (/. pi 360))))
                 r)))))
 
+;; older gauche doesn't have generators
+;; (define (once-generator first-value other-values) (gcons* first-value (circular-generator other-values)))
+(define (once-generator first-value other-values)
+  (let1 first #t
+    (lambda() (cond [first
+                     (set! first #f)
+                     first-value]
+                    [else
+                     other-values]))))
+
 (define (main args)
   (write-tree
    (list "create table costs ("
-         (intersperse ","
-                      (append (list "ogc_fid bigint primary key"
-                                    "wkb_geometry geometry")
-                              (append-map!
-                               (lambda(p)
-                                 (list #`",|p|_costs_fwd double precision"
-                                       #`",|p|_costs_bwd double precision"))
-                               *profiles*)))
-         ");"))
+         (intersperse
+          ",\n"
+          (append (list "ogc_fid bigint primary key"
+                        "wkb_geometry geometry")
+                  (append-map!
+                   (lambda(p)
+                     (list #`",|p|_costs_fwd double precision"
+                           #`",|p|_costs_bwd double precision"))
+                   *profiles*)
+                  (list "constraint enforce_dims_wkb_geometry check ((st_ndims(wkb_geometry) = 2))"
+                        "constraint enforce_geotype_wkb_geometry check ((geometrytype(wkb_geometry) = 'LINESTRING'::text))"
+                        "constraint enforce_srid_wkb_geometry check ((st_srid(wkb_geometry) = 3857))")))
+         ");\n"))
   ;;(print "select addgeometrycolumn('public','costs','wkb_geometry',3857,'LINESTRING',2);")
   (print "insert into costs (ogc_fid, wkb_geometry, "
          (string-join (append-map!
@@ -57,7 +89,7 @@
                        *profiles*)
                       ",")
          ") VALUES ")
-  (let1 first #t
+  (let1 separator (once-generator '() ",\n")
     (until (read) eof-object? => expr
            (case (car expr)
              [(way)
@@ -66,11 +98,7 @@
                 (when (>= (size-of geometry) 2)
                   (write-tree
                    (list
-                    (cond [first
-                           (set! first #f)
-                           ""]
-                          [else
-                           ",\n"])
+                    (separator)
                     "("
                     (way-id expr)
                     ",'"
@@ -78,7 +106,7 @@
                                            (map (lambda(p)
                                                   (let1 r (string-split p ",")
                                                     (geographic->epsg3857
-                                                     (map x->number
+                                                     (map string->number
                                                           (list (car r) (cadr r))))))
                                                 geometry)))
                     "',"
@@ -91,4 +119,11 @@
                                               *profiles*))
                     ")"))))])))
   (print ";")
+  (for-each print
+            '("-- maybe you want to run:"
+              "-- create index costs_geom_idx on costs using gist (wkb_geometry);"
+              "-- vacuum analyze costs;"
+              "-- some apps (f.e. qgis) need a 32-bit uniq id:"
+              "-- alter table costs add column \"gid\" serial;"
+              "-- create unique index costs_gid_idx on costs (gid);"))
   0)
