@@ -34,6 +34,7 @@
                              (write-to-string `((geom . ,(map (lambda(p)
                                                                 (map string->number (string-split p ",")))
                                                               (string-split (ref tags "geometry") " ")))
+                                                (waytype . ,(ref tags "alpstein:waytype" "U"))
                                                 (speed . ,(map (lambda(profile)
                                                                  (cons profile
                                                                        (cons (string->number (ref tags #`"osrm:,|profile|:fwd:speed" "0"))

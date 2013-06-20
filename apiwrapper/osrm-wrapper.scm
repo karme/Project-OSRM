@@ -46,6 +46,8 @@
  (else
   (define *dbclass* <gdbm>)))
 
+;; (debug-print-width 4000)
+
 (define (s->min x)
   (/. x 60))
 
@@ -238,6 +240,31 @@
 ;; (polyline-4d-substring '((0 0 0 0) (50 0 0 50) (100 0 0 100)) 0.2 0.1)
 ;; (polyline-4d-substring '((0 0 0 0) (50 0 0 50) (100 0 0 100)) 1 0.4)
 
+(define (tee f x)
+  (with-output-to-file f
+    (lambda()
+      (write x)
+      (newline)))
+  x)
+
+(define (attrs->alpstein-linref a total-length)
+  (let1 total-length (or total-length (apply + (map car a)))
+    (reverse!
+     (fold2 (lambda(a o cl)
+              (values
+               (cons (alist->linrefelem `((from . ,(/ cl total-length))
+                                          (to . ,(/ (+ cl (car a)) total-length))
+                                          (key . "waytype")
+                                          (value . ,(cadr a))
+                                          (length . ,(car a))))
+                     o)
+               (+ cl (car a))))
+            '()
+            0
+            a))))
+
+;; (attrs->alpstein-linref '((192.12652363327174 "U") (22.71320450433158 "R") (332.52512216779206 "U") (293.81261458748975 "R")))
+
 (define (wrap-osrm-route-2 context timescale profile points)
   ;; todo: maybe cache
   (define (way-info id)
@@ -304,17 +331,31 @@
 				  (assoc-ref (assoc-ref i 'speed) profile))
 				 3.6)))
 			  way-list way-infos))
+             (geometry (begin
+			 ;; (with-output-to-file (string-append "/tmp/merge" (sys-uid->user-name (sys-getuid)))
+			 ;;   (lambda()
+			 ;;     (write `(apply merge-polyline-4d ',ways))))
+			 (apply merge-polyline-4d ways)))
+             (total-length (polyline-4d-length geometry))
+             (linref-attrs (fold (lambda(wl wt o)
+                                   (cond [(or (null? o)
+                                              (not (equal? wt (cadr (car o)))))
+                                          (cons (list wl wt) o)]
+                                         [else
+                                          (inc! (caar o) wl)
+                                          o]))
+                                 '()
+                                 (map polyline-4d-length ways)
+                                 (map (lambda(wi)
+                                        (assoc-ref wi 'waytype))
+                                      way-infos)))
              (total-time (*. (apply + (map (lambda(s v)
 						   (assert (> v 0))
 						   (/ s v))
 						 (map polyline-4d-length ways)
 						 speeds))
 				   timescale))
-             (geometry (begin
-			 ;; (with-output-to-file (string-append "/tmp/merge" (sys-uid->user-name (sys-getuid)))
-			 ;;   (lambda()
-			 ;;     (write `(apply merge-polyline-4d ',ways))))
-			 (apply merge-polyline-4d ways))))
+             )
         ;; (write geometry)
         ;; (newline)
         (let1 pr (make-partial-route
@@ -332,7 +373,8 @@
 	  ;; 					       (to ,(number->string (caddr w))))))
 	  ;; 				    way-list)))
 	  ;; 		 '()))
-	  pr)))))
+	  (list pr
+                `(linref (@ (total-length ,(x->string total-length))) . ,(attrs->alpstein-linref linref-attrs total-length))))))))
 
 ;; some test
 ;; (time (car (wrap-osrm-route-2 *context* 1.0 'foot '((12.0 . 47.0) (9.0 . 50.0)))))
@@ -424,11 +466,10 @@
                              (apply sport-preset (cdr f))]))
                   `(result
                     (itdRouteList
-                     (itdRoute
-                      ,(wrap-osrm-route-2 context
-                                          timescale
-                                          profile
-                                          (group-pairwise (google-directions-query->track query))))))))))))
+                     (itdRoute . ,(wrap-osrm-route-2 context
+                                                     timescale
+                                                     profile
+                                                     (group-pairwise (google-directions-query->track query))))))))))))
 
 ;; simple test
 ;; (wrap-osrm-route-2 '((8.983340995511963 . 48.52608311031189) (9.15725614289749 . 48.52975538424495)))

@@ -221,6 +221,53 @@
                    ;; todo: maybe apply douglas-peucker
                    (tag (@ (k "geometry") (v ,(polyline->string pl-4d))))))))
 
+(define way-tags (compose (cute alist->hash-table <> 'equal?)
+                          (cute map (lambda(tag) (cons (sxml:attr tag 'k) (sxml:attr tag 'v))) <>)
+                          (sxpath '(tag))))
+
+(define (way-add-alpstein-waytype expr)
+  ;; see also
+  ;; http://wiki.openstreetmap.org/wiki/Key:surface
+
+  ;; "For roads for motor vehicles there there is normally an
+  ;; assumption that the surface is surface=paved"
+  (define (motorway? highway)
+    (boolean (member highway '("motorway"
+                               "motorway_link"
+                               "trunk"
+                               "trunk_link"
+                               "primary"
+                               "primary_link"
+                               "secondard"
+                               "secondard_link"
+                               "tertiary"
+                               "tertiary_link"
+                               "living_street"
+                               "pedestrian"
+                               "residiential"))))
+
+  (let* ((tags (way-tags expr))
+         (waytype (assoc-ref '(("asphalt"       . "A")
+                               ("paved"         . "R")
+                               ("unpaved"       . "G")
+                               ("gravel"        . "S")
+                               ("ground"        . "G")
+                               ("dirt"          . "G")
+                               ("grass"         . "G")
+                               ("concrete"      . "W")
+                               ("paving_stones" . "S")
+                               ("cobblestone"   . "S")
+                               ("sand"          . "S")
+                               ("compacted"     . "P"))
+                             (ref tags "surface"
+                                  (and (motorway? (ref tags "highway" #f)) "paved"))
+                             #f)))
+    (if waytype
+      (append expr
+              `((tag (@ (k "alpstein:waytype")
+                        (v ,waytype)))))
+      expr)))
+
 (define (main args)
   (let-optionals* (cdr args) ((output-format "parallel-pipe")
 			      (way-splits "way-splits.dbm")
@@ -277,15 +324,16 @@
 			  (list)])]
                   [(way)
                    (let* ((profile-way (lambda(w)
-                                         (let1 r (way-add-geometry w
-                                                                   (upsample-polyline->4d 'wgs84
-                                                                                          (map (lambda(n)
-                                                                                                 (let1 p (node-pos-get n #f)
-                                                                                                   ;; might fail if way references non-existing node
-                                                                                                   (assert (and n (list? p)))
-                                                                                                   p))
-                                                                                               (way-nodes w))
-                                                                                          50))
+                                         (let1 r (way-add-alpstein-waytype
+                                                  (way-add-geometry w
+                                                                    (upsample-polyline->4d 'wgs84
+                                                                                           (map (lambda(n)
+                                                                                                  (let1 p (node-pos-get n #f)
+                                                                                                    ;; might fail if way references non-existing node
+                                                                                                    (assert (and n (list? p)))
+                                                                                                    p))
+                                                                                                (way-nodes w))
+                                                                                           50)))
                                            (append r
                                                    (append-map
                                                     (lambda(profile)

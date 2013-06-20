@@ -31,6 +31,7 @@
 	  <fatal-error>
           linref-append
           route-append
+          alist->linrefelem
 	  ))
 
 (select-module routing)
