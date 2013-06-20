@@ -247,6 +247,7 @@
       (newline)))
   x)
 
+;; todo: carry must be mixed in here at the moment :(
 (define (attrs->alpstein-linref a total-length)
   (let1 total-length (or total-length (apply + (map car a)))
     (reverse!
@@ -344,18 +345,19 @@
 			 ;;     (write `(apply merge-polyline-4d ',ways))))
 			 (apply merge-polyline-4d ways)))
              (total-length (polyline-4d-length geometry))
-             (linref-attrs (fold (lambda(wl wt o)
-                                   (cond [(or (null? o)
-                                              (not (equal? wt (cadr (car o)))))
-                                          (cons (list wl wt) o)]
-                                         [else
-                                          (inc! (caar o) wl)
-                                          o]))
-                                 '()
-                                 (map polyline-4d-length ways)
-                                 (map (lambda(wi)
-                                        (assoc-ref wi 'waytype))
-                                      way-infos)))
+             (linref-attrs (reverse!
+                            (fold (lambda(wl wt o)
+                                    (cond [(or (null? o)
+                                               (not (equal? wt (cadr (car o)))))
+                                           (cons (list wl wt) o)]
+                                          [else
+                                           (inc! (caar o) wl)
+                                           o]))
+                                  '()
+                                  (map polyline-4d-length ways)
+                                  (map (lambda(wi)
+                                         (assoc-ref wi 'waytype))
+                                       way-infos))))
              (total-time (*. (apply + (map (lambda(s v)
 						   (assert (> v 0))
 						   (/ s v))
