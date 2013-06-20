@@ -70,7 +70,8 @@
          (intersperse
           ",\n"
           (append (list "ogc_fid bigint primary key"
-                        "wkb_geometry geometry")
+                        "osmid bigint not null"
+                        "wkb_geometry geometry not null")
                   (append-map!
                    (lambda(p)
                      (list #`",|p|_costs_fwd double precision"
@@ -81,7 +82,7 @@
                         "constraint enforce_srid_wkb_geometry check ((st_srid(wkb_geometry) = 3857))")))
          ");\n"))
   ;;(print "select addgeometrycolumn('public','costs','wkb_geometry',3857,'LINESTRING',2);")
-  (print "insert into costs (ogc_fid, wkb_geometry, "
+  (print "insert into costs (ogc_fid, osmid, wkb_geometry, "
          (string-join (append-map!
                        (lambda(p)
                          (list #`",|p|_costs_fwd"
@@ -93,14 +94,18 @@
     (until (read) eof-object? => expr
            (case (car expr)
              [(way)
-              (let* ((tags (way-tags expr))
-                     (geometry (string-split (ref tags "geometry") " ")))
+              (let* ((id (way-id expr))
+                     (tags (way-tags expr))
+                     (geometry (string-split (ref tags "geometry") " "))
+                     (osmid (ref tags "oldid" id)))
                 (when (>= (size-of geometry) 2)
                   (write-tree
                    (list
                     (separator)
                     "("
-                    (way-id expr)
+                    id
+                    ","
+                    osmid
                     ",'"
                     (apply ewkt-line (cons 3857
                                            (map (lambda(p)
