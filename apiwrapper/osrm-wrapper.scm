@@ -266,7 +266,7 @@
 
 ;; (attrs->alpstein-linref '((192.12652363327174 "U") (22.71320450433158 "R") (332.52512216779206 "U") (293.81261458748975 "R")))
 
-(define (wrap-osrm-route-2 context timescale profile points)
+(define (wrap-osrm-route-2 context timescale profile points linref-filter)
   ;; todo: maybe cache
   (define (way-info id)
     (read-from-string (dbm-get (ref context 'db) id)))
@@ -338,25 +338,28 @@
 			 ;;     (write `(apply merge-polyline-4d ',ways))))
 			 (apply merge-polyline-4d ways)))
              (total-length (polyline-4d-length geometry))
-             (linref-attrs (reverse!
-                            (fold (lambda(wl wt o)
-                                    (cond [(or (null? o)
-                                               (not (equal? wt (cadr (car o)))))
-                                           (cons (list wl wt) o)]
-                                          [else
-                                           (inc! (caar o) wl)
-                                           o]))
-                                  '()
-                                  (map polyline-4d-length ways)
-                                  (map (lambda(l i)
-                                         (let ((start (cadr l))
-                                               (end (caddr l)))
-                                           ((if (<= start end)
-                                              car
-                                              cdr)
-                                            (assoc-ref (assoc-ref (assoc-ref i 'profile) profile) 'waytype))))
-                                       way-list
-                                       way-infos))))
+             (linref-attrs (if (null? linref-filter)
+                             linref-filter
+                             ;; todo: support multiple attributes
+                             (reverse!
+                              (fold (lambda(wl wt o)
+                                      (cond [(or (null? o)
+                                                 (not (equal? wt (cadr (car o)))))
+                                             (cons (list wl wt) o)]
+                                            [else
+                                             (inc! (caar o) wl)
+                                             o]))
+                                    '()
+                                    (map polyline-4d-length ways)
+                                    (map (lambda(l i)
+                                           (let ((start (cadr l))
+                                                 (end (caddr l)))
+                                             ((if (<= start end)
+                                                car
+                                                cdr)
+                                              (assoc-ref (assoc-ref (assoc-ref i 'profile) profile) 'waytype))))
+                                         way-list
+                                         way-infos)))))
              (total-time (*. (apply + (map (lambda(s v)
 						   (assert (> v 0))
 						   (/ s v))
@@ -455,7 +458,8 @@
         (jsfilter (cgi-get-parameter "jsfilter" params :list #t :default '()))
         (jsgeom (cgi-get-parameter "jsgeom" params))
         (format (cgi-get-parameter "format" params :default "js"))
-        (query (cgi-get-parameter "q" params)))
+        (query (cgi-get-parameter "q" params))
+        (linref-filter (cgi-get-parameter "linref" params :default "()")))
     (let ((render (assoc-ref `(("js"    . ,(cut google-directions-v3-out jscallback jsfilter jsgeom <>))
                                ("xml"   . ,render-xml)
                                ("sxml"  . ,render-sxml))
@@ -477,7 +481,8 @@
                      (itdRoute . ,(wrap-osrm-route-2 context
                                                      timescale
                                                      profile
-                                                     (group-pairwise (google-directions-query->track query))))))))))))
+                                                     (group-pairwise (google-directions-query->track query))
+                                                     (safer-read-from-string linref-filter)))))))))))
 
 ;; simple test
 ;; (wrap-osrm-route-2 '((8.983340995511963 . 48.52608311031189) (9.15725614289749 . 48.52975538424495)))
