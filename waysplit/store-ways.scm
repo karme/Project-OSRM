@@ -14,7 +14,6 @@
 (use sxml.sxpath)
 (use sxml.tools)
 (use util.list)
-(use srfi-60)
 
 (define way-id (car-sxpath '(@ id *text*)))
 (define way-tags
