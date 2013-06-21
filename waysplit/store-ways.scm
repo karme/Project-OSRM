@@ -14,13 +14,44 @@
 (use sxml.sxpath)
 (use sxml.tools)
 (use util.list)
+(use srfi-60)
 
 (define way-id (car-sxpath '(@ id *text*)))
-(define way-tags (compose (cute alist->hash-table <> 'equal?)
-                          (cute map (lambda(tag) (cons (sxml:attr tag 'k) (sxml:attr tag 'v))) <>)
-                          (sxpath '(tag))))
+(define way-tags
+  (compose (cute alist->hash-table <> 'equal?)
+           (cute map (lambda(tag) (cons (sxml:attr tag 'k) (sxml:attr tag 'v))) <>)
+           (sxpath '(tag))))
 
 (define *profiles* '(foot bicycle mtb))
+
+;; todo: ugly: carry must be mixed in here at the moment :(
+(define (alpstein-waytype profile tags)
+  (let (;; see also bicycle.lua mode_pushing
+        (carryfwd? (logbit? 2 (string->number (ref tags #`"osrm:,|profile|:fwd:mode" "0"))))
+        (carrybwd? (logbit? 2 (string->number (ref tags #`"osrm:,|profile|:bwd:mode" "0"))))
+        (waytype (assoc-ref '(("A" . "1")
+                              ("S" . "4")
+                              ("W" . "2")
+                              ("P" . "3")
+                              ("G" . "5")
+                              ("R" . "7"))
+                            (ref tags "alpstein:waytype" "U")
+                            "0")))
+    (cons (if carryfwd? "6" waytype)
+          (if carrybwd? "6" waytype))))
+
+(define (transform-way expr)
+  (let1 tags (way-tags expr)
+    (write-to-string
+     `((geom . ,(map (lambda(p)
+                       (map string->number (string-split p ",")))
+                     (string-split (ref tags "geometry") " ")))
+       (profile . ,(map (lambda(profile)
+                          (cons profile
+                                `((waytype . ,(alpstein-waytype profile tags))
+                                  (speed . ,(cons (string->number (ref tags #`"osrm:,|profile|:fwd:speed" "0"))
+                                                  (string->number (ref tags #`"osrm:,|profile|:bwd:speed" "0")))))))
+                        *profiles*))))))
 
 (define (main args)
   (let-optionals* (cdr args) ((db-file "ways.dbm"))
@@ -29,17 +60,7 @@
        (until (read) eof-object? => expr
               (case (car expr)
                 [(way)
-                 (let1 tags (way-tags expr)
-                   (dbm-put! db (way-id expr)
-                             (write-to-string `((geom . ,(map (lambda(p)
-                                                                (map string->number (string-split p ",")))
-                                                              (string-split (ref tags "geometry") " ")))
-                                                (waytype . ,(ref tags "alpstein:waytype" "U"))
-                                                (speed . ,(map (lambda(profile)
-                                                                 (cons profile
-                                                                       (cons (string->number (ref tags #`"osrm:,|profile|:fwd:speed" "0"))
-                                                                             (string->number (ref tags #`"osrm:,|profile|:bwd:speed" "0")))))
-                                                               *profiles*))))))]))
+                 (dbm-put! db (way-id expr) (transform-way expr))]))
        (dbm-close db))))
   0)
 

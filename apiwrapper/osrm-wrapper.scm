@@ -247,29 +247,22 @@
       (newline)))
   x)
 
-;; todo: carry must be mixed in here at the moment :(
-(define (attrs->alpstein-linref a total-length)
-  (let1 total-length (or total-length (apply + (map car a)))
-    (reverse!
-     (fold2 (lambda(a o cl)
-              (values
-               (cons (alist->linrefelem `((from . ,(/ cl total-length))
-                                          (to . ,(/ (+ cl (car a)) total-length))
-                                          (key . "waytype")
-                                          (value . ,(assoc-ref '(("A" . "1")
-                                                                 ("S" . "4")
-                                                                 ("W" . "2")
-                                                                 ("P" . "3")
-                                                                 ("G" . "5")
-                                                                 ("R" . "7"))
-                                                               (cadr a)
-                                                               "0"))
-                                          (length . ,(car a))))
-                     o)
-               (+ cl (car a))))
-            '()
-            0
-            a))))
+(define (attrs->alpstein-linref a . args)
+  (let-optionals* args ((total-length #f))
+    (let1 total-length (or total-length (apply + (map car a)))
+      (reverse!
+       (fold2 (lambda(a o cl)
+                (values
+                 (cons (alist->linrefelem `((from . ,(/ cl total-length))
+                                            (to . ,(/ (+ cl (car a)) total-length))
+                                            (key . "waytype")
+                                            (value . ,(cadr a))
+                                            (length . ,(car a))))
+                       o)
+                 (+ cl (car a))))
+              '()
+              0
+              a)))))
 
 ;; (attrs->alpstein-linref '((192.12652363327174 "U") (22.71320450433158 "R") (332.52512216779206 "U") (293.81261458748975 "R")))
 
@@ -336,7 +329,7 @@
 			      (/ ((if (<= start end)
 				      car
 				      cdr)
-				  (assoc-ref (assoc-ref i 'speed) profile))
+                                  (assoc-ref (assoc-ref (assoc-ref i 'profile) profile) 'speed))
 				 3.6)))
 			  way-list way-infos))
              (geometry (begin
@@ -355,8 +348,14 @@
                                            o]))
                                   '()
                                   (map polyline-4d-length ways)
-                                  (map (lambda(wi)
-                                         (assoc-ref wi 'waytype))
+                                  (map (lambda(l i)
+                                         (let ((start (cadr l))
+                                               (end (caddr l)))
+                                           ((if (<= start end)
+                                              car
+                                              cdr)
+                                            (assoc-ref (assoc-ref (assoc-ref i 'profile) profile) 'waytype))))
+                                       way-list
                                        way-infos))))
              (total-time (*. (apply + (map (lambda(s v)
 						   (assert (> v 0))
