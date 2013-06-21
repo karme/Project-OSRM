@@ -1,3 +1,7 @@
+-- todo: at the moment not much different from bicycle.lua
+-- s.a.
+-- http://wiki.openstreetmap.org/wiki/Mountain_biking
+
 require("lib/access")
 require("lib/maxspeed")
 require("lib/elevation")
