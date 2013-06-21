@@ -58,7 +58,7 @@ EOF
 } > ${OUTDIR}/tue.poly
 
 # cut out poly using osmosis
-CUTOSM="${OUTDIR}/$X.cut.$POLY.osm.bz2"
+CUTOSM="${OUTDIR}/$X.cut.${POLY%*.poly}.osm.bz2"
 test -f "$CUTOSM" || pv ${OUTDIR}/$X.osm.bz2|pbzip2 -d|osmosis --read-xml file=/dev/stdin --bounding-polygon file=${OUTDIR}/$POLY completeWays=yes --write-xml /dev/stdout|pbzip2 > "$CUTOSM"
 
 pushd waysplit
