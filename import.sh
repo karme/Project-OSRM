@@ -57,6 +57,18 @@ END
 EOF
 } > ${OUTDIR}/tue.poly
 
+{ cat <<EOF
+none
+1
+    10.65 45.9
+    10.65 45.82
+    10.89 45.82
+    10.89 45.9
+END
+END
+EOF
+} > ${OUTDIR}/gardasee.poly
+
 # cut out poly using osmosis
 CUTOSM="${OUTDIR}/$X.cut.${POLY%*.poly}.osm.bz2"
 test -f "$CUTOSM" || pv ${OUTDIR}/$X.osm.bz2|pbzip2 -d|osmosis --read-xml file=/dev/stdin --bounding-polygon file=${OUTDIR}/$POLY completeWays=yes --write-xml /dev/stdout|pbzip2 > "$CUTOSM"
