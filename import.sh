@@ -11,8 +11,8 @@ OUTDIR="$3"
 test -z "$OUTDIR" && OUTDIR=$PWD/build/data
 
 #URL="http://planet.openstreetmap.org/planet/planet-latest.osm.bz2"
-#URL="http://download.geofabrik.de/openstreetmap/europe.osm.bz2"
-URL="http://download.geofabrik.de/europe/germany-latest.osm.bz2"
+URL="http://download.geofabrik.de/openstreetmap/europe.osm.bz2"
+#URL="http://download.geofabrik.de/europe/germany-latest.osm.bz2"
 #URL="http://download.geofabrik.de/openstreetmap/europe/germany/baden-wuerttemberg.osm.bz2"
 #URL="http://download.geofabrik.de/openstreetmap/europe/germany/baden-wuerttemberg/tuebingen-regbez.osm.bz2"
 PROFILES="foot bicycle mtb"
