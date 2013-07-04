@@ -117,6 +117,6 @@ function way_is_cycleway(way, forwardp)
    local cycleway = way.tags:Find("cycleway")
    local cycleway_left = way.tags:Find("cycleway:left")
    local cycleway_right = way.tags:Find("cycleway:right")
-   return not(mtb_is_mtbway(way, forwardp) and ((cycleway and cycleway_tags[cycleway]) or (forwardp and cycleway_right and cycleway_tags[cycleway_right]) or ((not forwardp) and cycleway_left and cycleway_tags[cycleway_left]) or way_is_part_of_cycle_route(way,forwardp))
+   return not(mtb_is_mtbway(way, forwardp)) and ((cycleway and cycleway_tags[cycleway]) or (forwardp and cycleway_right and cycleway_tags[cycleway_right]) or ((not forwardp) and cycleway_left and cycleway_tags[cycleway_left]) or way_is_part_of_cycle_route(way,forwardp))
 end
 
