@@ -30,8 +30,8 @@ bicycle_speeds = {
 	["living_street"] = default_speed,
 	["road"] = default_speed,
 	["service"] = default_speed,
-	["track"] = 12,
-	["path"] = 12
+	["track"] = 10,
+	["path"] = 10
 	--["footway"] = 12,
 	--["pedestrian"] = 12,
 }
