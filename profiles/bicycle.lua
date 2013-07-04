@@ -82,6 +82,7 @@ surface_speeds = {
 	["dirt"] = 6,
 	["earth"] = 6,
 	["grass"] = 6,
+	["wood"] = 3,
 	["mud"] = 3,
 	["sand"] = 3	
 }
