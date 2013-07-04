@@ -178,7 +178,8 @@ function way_is_mtbway(way, forwardp)
    -- there is also mtb:scale:uphill
    -- and http://wiki.openstreetmap.org/wiki/Key:incline
    -- we will have to consider direction here, too
-   return way.tags:Find("mtb:scale") or way_is_part_of_route(way,forwardp,Set({"mtb"}))
+   assert(way.tags:Find("mtb:scale"))
+   return (way.tags:Find("mtb:scale") ~= "") or way_is_part_of_route(way,forwardp,Set({"mtb"}))
 end
 
 function way_function (way)
