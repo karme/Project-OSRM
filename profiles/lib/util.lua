@@ -80,7 +80,7 @@ function memberp(t, e)
 end
 
 function way_is_part_of_route(way, forwardp, route_type_set)
-   assert type(route_type_set)=='table';
+   assert(type(route_type_set) == 'table');
    local i=0
    local rel_type
    while true do
