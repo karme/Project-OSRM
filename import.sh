@@ -70,21 +70,19 @@ EOF
 } > ${OUTDIR}/gardasee.poly
 
 { cat <<EOF
-gardasee
+none
 1
     10.65 45.9
     10.65 45.82
     10.89 45.82
     10.89 45.9
 END
-allgaeu
 2
     10 47.62
     10 47.47
     10.4 47.47
     10.4 47.62
 END
-tue
 3
     10.65 45.9
     10.65 45.82
