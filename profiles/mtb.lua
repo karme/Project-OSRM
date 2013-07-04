@@ -161,32 +161,6 @@ local function print_way(way)
     print(r)
 end
 
-local function way_is_part_of_cycle_route(way, forwardp)
-   local i=0
-   local rel_type
-   while true do
-      -- note: assumes all denormalized relations have a non-empty type tag
-      -- at the moment the denormalization preprocessing filters for route types
-      rel_type=way.tags:Find("rel["..i.."][type]")
-      if rel_type == '' then break end
-      if rel_type=='route' and way.tags:Find("rel["..i.."][route]")=='bicycle' then
-         local role=way.tags:Find("rel["..i.."]:role")
-         if role == '' or ((fowardp and role=='forward')) or ((not forwardp) and role=='backward') then
-            return true
-         end
-      end
-      i=i+1
-   end
-   return false
-end
-
-local function way_is_cycleway(way, forwardp)
-   local cycleway = way.tags:Find("cycleway")
-   local cycleway_left = way.tags:Find("cycleway:left")
-   local cycleway_right = way.tags:Find("cycleway:right")
-   return (cycleway and cycleway_tags[cycleway]) or (forwardp and cycleway_right and cycleway_tags[cycleway_right]) or ((not forwardp) and cycleway_left and cycleway_tags[cycleway_left]) or way_is_part_of_cycle_route(way,forwardp)
-end
-
 -- simple speed (scaling) function depending on gradient
 -- input: gradient
 -- output: speed
@@ -394,8 +368,8 @@ function way_function (way)
     -- for now use a hack (note: this only works with the fake way!)
     way.forward.realspeed = way.forward.speed
     way.backward.realspeed = way.backward.speed
-    -- mtb doesn't prefer cycleways
-    -- scale_way_speeds(way, way_is_cycleway(way,true) and 1 or 0.5, way_is_cycleway(way,false) and 1 or 0.5)
+    -- prefer mtb routes
+    scale_way_speeds(way, way_is_part_of_route(way,true,"mtb") and 1 or 0.5, way_is_part_of_route(way,false,"mtb") and 1 or 0.5)
     	
     -- adjust mode for direction
     if way.forward.mode > 0 then

@@ -81,27 +81,8 @@ function node_function (node)
     return true
 end
 
--- note: very similar to way_is_part_of_cycle_route
 local function way_is_part_of_foot_route(way, forwardp)
-   local i=0
-   local rel_type
-   while true do
-      -- note: assumes all denormalized relations have a non-empty type tag
-      -- at the moment the denormalization preprocessing filters for route types
-      rel_type=way.tags:Find("rel["..i.."][type]")
-      if rel_type == '' then break end
-      if rel_type=='route' then
-         local route=way.tags:Find("rel["..i.."][route]")
-         if route=='foot' or route=='hiking' then
-            local role=way.tags:Find("rel["..i.."]:role")
-            if role == '' or ((fowardp and role=='forward')) or ((not forwardp) and role=='backward') then
-               return true
-            end
-         end
-      end
-      i=i+1
-   end
-   return false
+   return way_is_part_of_route(way, forwardp, Set({"foot","hiking"}))
 end
 
 local function way_is_footway(way, forwardp)

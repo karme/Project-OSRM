@@ -68,3 +68,43 @@ if not parseDuration then
       return 1;
    end
 end
+
+function Set(t)
+   local s = {}
+   for _,v in pairs(t) do s[v] = true end
+   return s
+end
+
+function memberp(t, e)
+   return t[e] and true or false
+end
+
+function way_is_part_of_route(way, forwardp, route_type_set)
+   local i=0
+   local rel_type
+   while true do
+      -- note: assumes all denormalized relations have a non-empty type tag
+      -- at the moment the denormalization preprocessing filters for route types
+      rel_type=way.tags:Find("rel["..i.."][type]")
+      if rel_type == '' then break end
+      if rel_type=='route' and memberp(route_type_set, way.tags:Find("rel["..i.."][route]")) then
+         local role=way.tags:Find("rel["..i.."]:role")
+         if role == '' or ((fowardp and role=='forward')) or ((not forwardp) and role=='backward') then
+            return true
+         end
+      end
+      i=i+1
+   end
+   return false
+end
+
+local function way_is_part_of_cycle_route(way, forwardp)
+   return way_is_part_of_route(way, forwardp, Set({"bicycle"}))
+end
+
+local function way_is_cycleway(way, forwardp)
+   local cycleway = way.tags:Find("cycleway")
+   local cycleway_left = way.tags:Find("cycleway:left")
+   local cycleway_right = way.tags:Find("cycleway:right")
+   return (cycleway and cycleway_tags[cycleway]) or (forwardp and cycleway_right and cycleway_tags[cycleway_right]) or ((not forwardp) and cycleway_left and cycleway_tags[cycleway_left]) or way_is_part_of_cycle_route(way,forwardp)
+end
