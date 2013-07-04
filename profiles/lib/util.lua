@@ -103,9 +103,20 @@ function way_is_part_of_cycle_route(way, forwardp)
    return way_is_part_of_route(way, forwardp, Set({"bicycle"}))
 end
 
+function way_is_mtbway(way, forwardp)
+   -- todo:
+   -- mtb:scale is downhill only?!
+   -- there is also mtb:scale:uphill
+   -- and http://wiki.openstreetmap.org/wiki/Key:incline
+   -- we will have to consider direction here, too
+   assert(way.tags:Find("mtb:scale"))
+   return (way.tags:Find("mtb:scale") ~= "") or way_is_part_of_route(way,forwardp,Set({"mtb"}))
+end
+
 function way_is_cycleway(way, forwardp)
    local cycleway = way.tags:Find("cycleway")
    local cycleway_left = way.tags:Find("cycleway:left")
    local cycleway_right = way.tags:Find("cycleway:right")
-   return (cycleway and cycleway_tags[cycleway]) or (forwardp and cycleway_right and cycleway_tags[cycleway_right]) or ((not forwardp) and cycleway_left and cycleway_tags[cycleway_left]) or way_is_part_of_cycle_route(way,forwardp)
+   return not(mtb_is_mtbway(way, forwardp) and ((cycleway and cycleway_tags[cycleway]) or (forwardp and cycleway_right and cycleway_tags[cycleway_right]) or ((not forwardp) and cycleway_left and cycleway_tags[cycleway_left]) or way_is_part_of_cycle_route(way,forwardp))
 end
+

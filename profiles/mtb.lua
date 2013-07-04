@@ -172,16 +172,6 @@ local function bicycle_gradient_speed(g)
    end
 end
 
-function way_is_mtbway(way, forwardp)
-   -- todo:
-   -- mtb:scale is downhill only?!
-   -- there is also mtb:scale:uphill
-   -- and http://wiki.openstreetmap.org/wiki/Key:incline
-   -- we will have to consider direction here, too
-   assert(way.tags:Find("mtb:scale"))
-   return (way.tags:Find("mtb:scale") ~= "") or way_is_part_of_route(way,forwardp,Set({"mtb"}))
-end
-
 function way_function (way)
 	-- initial routability check, filters out buildings, boundaries, etc
 	local highway = way.tags:Find("highway")
