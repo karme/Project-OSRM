@@ -98,11 +98,11 @@ function way_is_part_of_route(way, forwardp, route_type_set)
    return false
 end
 
-local function way_is_part_of_cycle_route(way, forwardp)
+function way_is_part_of_cycle_route(way, forwardp)
    return way_is_part_of_route(way, forwardp, Set({"bicycle"}))
 end
 
-local function way_is_cycleway(way, forwardp)
+function way_is_cycleway(way, forwardp)
    local cycleway = way.tags:Find("cycleway")
    local cycleway_left = way.tags:Find("cycleway:left")
    local cycleway_right = way.tags:Find("cycleway:right")
