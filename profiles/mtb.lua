@@ -19,7 +19,7 @@ restriction_exception_tags = { "bicycle", "vehicle", "access" }
 
 default_speed = 15
 
-walking_speed = 6
+walking_speed = 4
 
 bicycle_speeds = { 
 	["cycleway"] = default_speed,
