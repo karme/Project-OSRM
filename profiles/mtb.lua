@@ -369,7 +369,7 @@ function way_function (way)
     way.forward.realspeed = way.forward.speed
     way.backward.realspeed = way.backward.speed
     -- prefer mtb routes
-    scale_way_speeds(way, way_is_part_of_route(way,true,Set("mtb")) and 1 or 0.5, way_is_part_of_route(way,false,Set("mtb")) and 1 or 0.5)
+    scale_way_speeds(way, way_is_part_of_route(way,true,Set({"mtb"})) and 1 or 0.5, way_is_part_of_route(way,false,Set({"mtb"})) and 1 or 0.5)
     	
     -- adjust mode for direction
     if way.forward.mode > 0 then
