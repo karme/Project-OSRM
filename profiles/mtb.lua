@@ -40,6 +40,13 @@ bicycle_speeds = {
 	--["pedestrian"] = 12,
 }
 
+mtb_highway_penalties = {
+	["primary"] = 2,
+	["primary_link"] = 2,
+	["secondary"] = 1.5,
+	["secondary_link"] = 1.5,
+}
+
 pedestrian_speeds = { 
 	["footway"] = walking_speed,
 	["pedestrian"] = walking_speed,
@@ -370,7 +377,11 @@ function way_function (way)
     way.backward.realspeed = way.backward.speed
     -- prefer mtb routes
     scale_way_speeds(way, way_is_mtbway(way,true) and 1 or 0.5, way_is_mtbway(way,false) and 1 or 0.5)
-    	
+
+    -- penalty for big streets
+    local street_penalty=mtb_highway_penalties[highway] or 1
+    scale_way_speeds(way, street_penalty, street_penalty)
+
     -- adjust mode for direction
     if way.forward.mode > 0 then
        way.forward.mode = set_lowest_bit(way.forward.mode, 1)
