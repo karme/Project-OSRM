@@ -379,7 +379,7 @@ function way_function (way)
     scale_way_speeds(way, way_is_mtbway(way,true) and 1 or 0.5, way_is_mtbway(way,false) and 1 or 0.5)
 
     -- penalty for big streets
-    local street_penalty=mtb_highway_penalties[highway] or 1
+    local street_penalty=1/(mtb_highway_penalties[highway] or 1)
     scale_way_speeds(way, street_penalty, street_penalty)
 
     -- adjust mode for direction
