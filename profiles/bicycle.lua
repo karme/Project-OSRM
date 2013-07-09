@@ -169,6 +169,10 @@ local function bicycle_gradient_speed(g)
    end
 end
 
+local function last(t)
+   return t[table.maxn(t)]
+end
+
 function way_function (way)
 	-- initial routability check, filters out buildings, boundaries, etc
 	local highway = way.tags:Find("highway")
