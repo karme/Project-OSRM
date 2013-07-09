@@ -385,10 +385,10 @@ function way_function (way)
        local len=last(elevation_profile)[1]
        local vpenalty = len/5
        if not way_is_cycleway(way,true) then
-          way.forward.speed = min(way.forward.speed, vpenalty)
+          way.forward.speed = math.min(way.forward.speed, vpenalty)
        end
        if not way_is_cycleway(way,false) then
-          way.backward.speed = min(way.backward.speed, vpenalty)
+          way.backward.speed = math.min(way.backward.speed, vpenalty)
        end
     end
     
