@@ -366,7 +366,13 @@ function way_function (way)
     way.forward.realspeed = way.forward.speed
     way.backward.realspeed = way.backward.speed
     scale_way_speeds(way, way_is_cycleway(way,true) and 1 or 0.5, way_is_cycleway(way,false) and 1 or 0.5)
-    	
+
+    -- todo: penalty for short "off-network" pieces?
+    -- didn't find good examples in osm data => ignore for now
+    -- local vpenalty = s / 3.33333333333e-3
+    -- way_is_cycleway(way,true) or way.forward.speed = min(way.forward.speed, vpenalty)
+    -- way_is_cycleway(way,false) or way.backward.speed = min(way.backward.speed, vpenalty)
+
     -- adjust mode for direction
     if way.forward.mode > 0 then
        way.forward.mode = set_lowest_bit(way.forward.mode, 1)
