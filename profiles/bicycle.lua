@@ -193,6 +193,7 @@ function way_function (way)
     end
 
     -- remove all ways with sac_scale
+    -- todo: maybe accept sac_scale == "hiking"?
     local sac_scale=way.tags:Find("amenity")
     if sac_scale and sac_scale ~= '' then
        return false
