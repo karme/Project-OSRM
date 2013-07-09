@@ -191,6 +191,12 @@ function way_function (way)
     if highway=='construction' or railway=='construction' then
         return false
     end
+
+    -- remove all ways with sac_scale
+    local sac_scale=way.tags:Find("amenity")
+    if sac_scale and sac_scale ~= '' then
+       return false
+    end
     
 	-- access
  	local access = Access.find_access_tag(way, access_tags_hierachy)
