@@ -17,7 +17,7 @@ cycleway_tags = {["track"]=true,["lane"]=true,["opposite"]=true,["opposite_lane"
 service_tag_restricted = { ["parking_aisle"] = true }
 restriction_exception_tags = { "bicycle", "vehicle", "access" }
 
-default_speed = 15
+default_speed = 12
 
 walking_speed = 4
 
@@ -34,8 +34,8 @@ bicycle_speeds = {
 	["living_street"] = default_speed,
 	["road"] = default_speed,
 	["service"] = default_speed,
-	["track"] = 12,
-	["path"] = 12
+	["track"] = default_speed,
+	["path"] = default_speed
 	--["footway"] = 12,
 	--["pedestrian"] = 12,
 }
