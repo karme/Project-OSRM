@@ -88,7 +88,7 @@ end
 local function way_is_footway(way, forwardp)
    -- todo: improve
    -- see also:
-   -- 
+   -- http://wiki.openstreetmap.org/wiki/Key:sac_scale
    return way_is_part_of_foot_route(way, forwardp)
 end
 
