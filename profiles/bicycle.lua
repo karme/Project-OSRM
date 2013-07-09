@@ -193,7 +193,9 @@ function way_function (way)
     end
 
     -- remove all ways with sac_scale
-    -- todo: maybe accept sac_scale == "hiking"?
+    -- todo:
+    -- - maybe accept sac_scale == "hiking"?
+    -- - accept bicycle=yes (s.a. http://tagwatch.stoecker.eu/Europe/De/tagstats_sac_scale_hiking.html)
     local sac_scale=way.tags:Find("sac_scale")
     if sac_scale and sac_scale ~= '' then
        return false
@@ -374,12 +376,18 @@ function way_function (way)
     way.backward.realspeed = way.backward.speed
     scale_way_speeds(way, way_is_cycleway(way,true) and 1 or 0.5, way_is_cycleway(way,false) and 1 or 0.5)
 
-    -- todo: penalty for short "off-network" pieces?
-    -- didn't find good examples in osm data => ignore for now
-    -- local vpenalty = s / 3.33333333333e-3
-    -- way_is_cycleway(way,true) or way.forward.speed = min(way.forward.speed, vpenalty)
-    -- way_is_cycleway(way,false) or way.backward.speed = min(way.backward.speed, vpenalty)
-
+    -- penalty for short "off-network" pieces
+    if elevation_profile then
+       local len=last(elevation_profile)[1]
+       local vpenalty = len/5
+       if not way_is_cycleway(way,true) then
+          way.forward.speed = min(way.forward.speed, vpenalty)
+       end
+       if not way_is_cycleway(way,false) then
+          way.backward.speed = min(way.backward.speed, vpenalty)
+       end
+    end
+    
     -- adjust mode for direction
     if way.forward.mode > 0 then
        way.forward.mode = set_lowest_bit(way.forward.mode, 1)
