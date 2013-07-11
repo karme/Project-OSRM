@@ -196,7 +196,7 @@ function mtb_way_penalty(way, elevation_profile, forwardp)
    -- if elevation_profile then
    --    local len=last(elevation_profile)[1]
    --    local speed
-   --    if forwardp then speed=way.speed.forward else speed=way.speed.backward end
+   --    if forwardp then speed=way.forward.speed else speed=way.backward.speed end
    --    penalty = math.max(speed / (len/5), 2)
    -- end
    return penalty
