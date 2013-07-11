@@ -30,10 +30,15 @@ bicycle_speeds = {
 	["living_street"] = default_speed,
 	["road"] = default_speed,
 	["service"] = default_speed,
-	["track"] = 10,
-	["path"] = 10
+	["track"] = default_speed,
+	["path"] = default_speed
 	--["footway"] = 12,
 	--["pedestrian"] = 12,
+}
+
+bicycle_highway_penalties = {
+	["track"] = 1.1,
+	["path"] = 1.1
 }
 
 pedestrian_speeds = { 
@@ -173,6 +178,25 @@ local function last(t)
    return t[table.maxn(t)]
 end
 
+function bicycle_way_penalty(way, elevation_profile, forwardp)
+   if way_is_cycleway(way,forwardp) then
+      return 1
+   end
+
+   -- penalty for some highways
+   -- local highway_penalty=(bicycle_highway_penalties[highway] or 1)
+
+   local penalty=2;
+   -- penalty for short "off-network" pieces
+   if elevation_profile then
+      local len=last(elevation_profile)[1]
+      local speed
+      if forwardp then speed=way.speed.forward else speed=way.speed.backward end
+      penalty = math.max(speed / (len/5), 2)
+   end
+   return penalty
+end
+
 function way_function (way)
 	-- initial routability check, filters out buildings, boundaries, etc
 	local highway = way.tags:Find("highway")
@@ -196,21 +220,17 @@ function way_function (way)
         return false
     end
 
-    -- remove all ways with sac_scale
-    -- todo:
-    -- - maybe accept sac_scale == "hiking"?
-    -- - accept bicycle=yes (s.a. http://tagwatch.stoecker.eu/Europe/De/tagstats_sac_scale_hiking.html)
-    local sac_scale=way.tags:Find("sac_scale")
-    if sac_scale and sac_scale ~= '' then
-       return false
-    end
-    
 	-- access
  	local access = Access.find_access_tag(way, access_tags_hierachy)
     if access_tag_blacklist[access] then
 		return false
     end
 
+    -- remove ways where sac_scale suggest cycling is a bad idea (except it is explicitly allowed)
+    local sac_scale=way.tags:Find("sac_scale")
+    if sac_scale and sac_scale ~= '' and sac_scale ~= 'hiking' and not access_tag_whitelist[access] then
+       return false
+    end
 
 	-- other tags
 	local name = way.tags:Find("name")
@@ -358,10 +378,10 @@ function way_function (way)
 	end
 
     -- surfaces
-    if surface_speeds[surface] then
-        way.forward.speed = math.min(way.forward.speed, surface_speeds[surface])
-        way.backward.speed  = math.min(way.backward.speed, surface_speeds[surface])
-    end
+    -- if surface_speeds[surface] then
+    --     way.forward.speed = math.min(way.forward.speed, surface_speeds[surface])
+    --     way.backward.speed  = math.min(way.backward.speed, surface_speeds[surface])
+    -- end
 
     -- elevation
     local elevation_profile = Elevation.parse_profile(way.tags:Find("geometry"))
@@ -371,27 +391,22 @@ function way_function (way)
     end
 
 	-- maxspeed
-    MaxSpeed.limit( way, maxspeed, maxspeed_forward, maxspeed_backward )
+    -- MaxSpeed.limit( way, maxspeed, maxspeed_forward, maxspeed_backward )
 
     -- prefer cycle ways
     -- todo: we want to adjust the cost function here / not the time/speed function
     -- for now use a hack (note: this only works with the fake way!)
     way.forward.realspeed = way.forward.speed
     way.backward.realspeed = way.backward.speed
-    scale_way_speeds(way, way_is_cycleway(way,true) and 1 or 0.5, way_is_cycleway(way,false) and 1 or 0.5)
 
-    -- penalty for short "off-network" pieces
-    if elevation_profile then
-       local len=last(elevation_profile)[1]
-       local vpenalty = len/5
-       if not way_is_cycleway(way,true) then
-          way.forward.speed = math.min(way.forward.speed, vpenalty)
-       end
-       if not way_is_cycleway(way,false) then
-          way.backward.speed = math.min(way.backward.speed, vpenalty)
-       end
-    end
-    
+    -- make cost only depend on length
+    if way.forward.speed > 0 then way.forward.speed = default_speed end
+    if way.backward.speed > 0 then way.backward.speed = default_speed end
+
+    scale_way_speeds(way,
+                     1/bicycle_way_penalty(way, elevation_profile, true),
+                     1/bicycle_way_penalty(way, elevation_profile, false))
+
     -- adjust mode for direction
     if way.forward.mode > 0 then
        way.forward.mode = set_lowest_bit(way.forward.mode, 1)

@@ -103,6 +103,13 @@ local function foot_gradient_speed(g)
    end
 end
 
+function foot_way_penalty(way, elevation_profile, forwardp)
+   if way_is_footway(way, forwardp) then
+      return 1
+   end
+   return 2
+end
+
 function way_function (way)
 
     -- First, get the properties of each way that we come across
@@ -200,7 +207,14 @@ function way_function (way)
     -- for now use a hack (note: this only works with the fake way!)
     way.forward.realspeed = way.forward.speed
     way.backward.realspeed = way.backward.speed
-    scale_way_speeds(way, way_is_footway(way,true) and 1 or 0.5, way_is_footway(way,false) and 1 or 0.5)
+
+    -- make cost only depend on length
+    if way.forward.speed > 0 then way.forward.speed = default_speed end
+    if way.backward.speed > 0 then way.backward.speed = default_speed end
+
+    scale_way_speeds(way,
+                     1/foot_way_penalty(way, elevation_profile, true),
+                     1/foot_way_penalty(way, elevation_profile, false))
 
     -- adjust mode for direction
     if way.forward.mode > 0 then
