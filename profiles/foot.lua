@@ -39,6 +39,14 @@ speed_profile = {
     ["default"] = default_speed
 }
 
+waytype_penalties = {
+   ["R"] = 10,
+   ["A"] = 5,
+   ["S"] = 3,
+   ["W"] = 2,
+   ["P"] = 2,
+   ["G"] = 10
+}
 
 take_minimum_of_speeds 	= true
 obey_oneway 			= true
@@ -107,7 +115,7 @@ function foot_way_penalty(way, elevation_profile, forwardp)
    if way_is_footway(way, forwardp) then
       return 1
    end
-   return 2
+   return waytype_penalties[way.tags:Find("alpstein:waytype")] or 2
 end
 
 function way_function (way)

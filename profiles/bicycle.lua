@@ -92,6 +92,15 @@ surface_speeds = {
 	["sand"] = 3	
 }
 
+waytype_penalties = {
+   ["R"] = 3,
+   ["A"] = 2,
+   ["S"] = 3,
+   ["W"] = 5,
+   ["P"] = 10,
+   ["G"] = 10
+}
+
 take_minimum_of_speeds 	= true
 obey_oneway 			= true
 obey_bollards 			= false
@@ -194,7 +203,7 @@ function bicycle_way_penalty(way, elevation_profile, forwardp)
       if forwardp then speed=way.forward.speed else speed=way.backward.speed end
       penalty = math.max(speed / (len/5), 2)
    end
-   return penalty
+   return math.max(penalty, waytype_penalties[way.tags:Find("alpstein:waytype")] or 2)
 end
 
 function way_function (way)
