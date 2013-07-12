@@ -434,8 +434,8 @@
   (with-input-from-string s read/ns))
 
 ;; todo
-(define *presets* '((hikingTourTrail . ((vstd . 4) (profile . foot)))
-                    (cityTrail . ((vstd . 4) (profile . foot)))
+(define *presets* '((hikingTourTrail . ((vstd . 4.2) (profile . foot)))
+                    (cityTrail . ((vstd . 4.2) (profile . foot)))
                     (cycling . ((vstd . 15) (profile . bicycle)))
                     (mountainbiking . ((vstd . 12) (profile . mtb)))
                     (default . ((vstd . 15) (profile . bicycle)))))
