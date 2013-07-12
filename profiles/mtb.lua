@@ -183,9 +183,9 @@ end
 -- output: speed
 local function bicycle_gradient_speed(g)
    if g>0 then
-      return math.max(1/15,1-90/15*g)
+      return math.max(1/12,1-90/12*g)
    else
-      return math.min(50/15,1-72/15*g)
+      return math.min(50/12,1-72/12*g)
    end
 end
 
