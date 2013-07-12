@@ -398,14 +398,14 @@ function way_function (way)
     if elevation_profile then
        local speed_scale_fwd, speed_scale_bwd
        if way.forward.mode ~= mode_pushing then
-          Elevation.speed_scale(elevation_profile, bicycle_gradient_speed, true)
+          speed_scale_fwd = Elevation.speed_scale(elevation_profile, bicycle_gradient_speed, true)
        else
-          Elevation.speed_scale(elevation_profile, foot_gradient_speed, true)
+          speed_scale_fwd = Elevation.speed_scale(elevation_profile, foot_gradient_speed, true)
        end
        if way.backward.mode ~= mode_pushing then
-          Elevation.speed_scale(elevation_profile, bicycle_gradient_speed, false)
+          speed_scale_bwd = Elevation.speed_scale(elevation_profile, bicycle_gradient_speed, false)
        else
-          Elevation.speed_scale(elevation_profile, foot_gradient_speed, false)
+          speed_scale_bwd = Elevation.speed_scale(elevation_profile, foot_gradient_speed, false)
        end
        scale_way_speeds(way, speed_scale_fwd, speed_scale_bwd)
     end
