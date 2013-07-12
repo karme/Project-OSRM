@@ -99,7 +99,7 @@ test -f "$CUTOSM" || pv ${OUTDIR}/$X.osm.bz2|pbzip2 -d|osmosis --read-xml file=/
 
 pushd waysplit
 # note: $X.split.osm.bz2 only for debugging
-time ./waysplit.sh "$CUTOSM" ${OUTDIR}/${X}.ways.dbm ${OUTDIR}/${X}.sql.bz2 |tee >(pbzip2 > ${OUTDIR}/$X.split.osm.bz2)|osmosis --read-xml - --write-pbf ${OUTDIR}/$X.osm.pbf omitmetadata=true
+/usr/bin/time -v ./waysplit.sh "$CUTOSM" ${OUTDIR}/${X}.ways.dbm ${OUTDIR}/${X}.sql.bz2 |tee >(pbzip2 > ${OUTDIR}/$X.split.osm.bz2)|osmosis --read-xml - --write-pbf ${OUTDIR}/$X.osm.pbf omitmetadata=true
 popd
 
 for P in $PROFILES; do
