@@ -1,5 +1,9 @@
 #!/bin/bash -xe
 
+function timed() {
+    /usr/bin/time -v "$@"
+}
+
 POLY="$1"
 test -z "$POLY" && POLY="europe"
 POLY="$POLY.poly"
@@ -99,14 +103,14 @@ test -f "$CUTOSM" || pv ${OUTDIR}/$X.osm.bz2|pbzip2 -d|osmosis --read-xml file=/
 
 pushd waysplit
 # note: $X.split.osm.bz2 only for debugging
-/usr/bin/time -v ./waysplit.sh "$CUTOSM" ${OUTDIR}/${X}.ways.dbm ${OUTDIR}/${X}.sql.bz2 |tee >(pbzip2 > ${OUTDIR}/$X.split.osm.bz2)|osmosis --read-xml - --write-pbf ${OUTDIR}/$X.osm.pbf omitmetadata=true
+timed ./waysplit.sh "$CUTOSM" ${OUTDIR}/${X}.ways.dbm ${OUTDIR}/${X}.sql.bz2 |tee >(pbzip2 > ${OUTDIR}/$X.split.osm.bz2)|osmosis --read-xml - --write-pbf ${OUTDIR}/$X.osm.pbf omitmetadata=true
 popd
 
 for P in $PROFILES; do
     PROFILE="profiles/$P.lua"
     mkdir -p ${OUTDIR}/$P
     cp -vl ${OUTDIR}/$X.osm.pbf ${OUTDIR}/$P/$X.osm.pbf
-    time ./build/osrm-extract ${OUTDIR}/$P/$X.osm.pbf $PROFILE
+    timed ./build/osrm-extract ${OUTDIR}/$P/$X.osm.pbf $PROFILE
     time ./build/osrm-prepare ${OUTDIR}/$P/$X.osrm ${OUTDIR}/$P/$X.osrm.restrictions $PROFILE
     rm -v ${OUTDIR}/$P/$X.osm.pbf
 done
