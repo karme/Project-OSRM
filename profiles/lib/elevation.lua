@@ -75,6 +75,14 @@ function speed_scales(elevation_profile, gradient_speedf)
    return speed_scale_fwd, speed_scale_bwd
 end
 
+function speed_scale(elevation_profile, gradient_speedf, forwardp)
+   if forwardp then
+      return avg_speed_and_length_2d(elevation_profile, gradient_speedf)
+   else
+      return avg_speed_and_length_2d(reverse_dz(elevation_profile), gradient_speedf)
+   end
+end
+
 function parse_profile(s)
    if not s or s == '' then
       return false

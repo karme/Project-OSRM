@@ -15,7 +15,7 @@ restriction_exception_tags = { "bicycle", "vehicle", "access" }
 
 default_speed = 15
 
-walking_speed = 4
+walking_speed = 4.2
 
 bicycle_speeds = { 
 	["cycleway"] = default_speed,
@@ -393,9 +393,20 @@ function way_function (way)
     -- end
 
     -- elevation
+    -- todo: ugly
     local elevation_profile = Elevation.parse_profile(way.tags:Find("geometry"))
     if elevation_profile then
-       local speed_scale_fwd, speed_scale_bwd = Elevation.speed_scales(elevation_profile, bicycle_gradient_speed)
+       local speed_scale_fwd, speed_scale_bwd
+       if way.forward.mode ~= mode_pushing then
+          Elevation.speed_scale(elevation_profile, bicycle_gradient_speed, true)
+       else
+          Elevation.speed_scale(elevation_profile, foot_gradient_speed, true)
+       end
+       if way.backward.mode ~= mode_pushing then
+          Elevation.speed_scale(elevation_profile, bicycle_gradient_speed, false)
+       else
+          Elevation.speed_scale(elevation_profile, foot_gradient_speed, false)
+       end
        scale_way_speeds(way, speed_scale_fwd, speed_scale_bwd)
     end
 

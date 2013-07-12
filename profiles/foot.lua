@@ -99,17 +99,6 @@ local function way_is_footway(way, forwardp)
    return way_is_part_of_foot_route(way, forwardp) or (way.tags:Find("sac_scale") ~= '')
 end
 
--- simple speed (scaling) function depending on gradient
--- input: gradient
--- output: speed
-local function foot_gradient_speed(g)
-   if g>0 then
-      return math.max(1/4.2,1-3*g)
-   else
-      return math.max(1/4.2,1+1.4*g)
-   end
-end
-
 function foot_way_penalty(way, elevation_profile, forwardp)
    if way_is_footway(way, forwardp) then
       return 1

@@ -120,3 +120,13 @@ function way_is_cycleway(way, forwardp)
    return (cycleway and cycleway_tags[cycleway]) or (forwardp and cycleway_right and cycleway_tags[cycleway_right]) or ((not forwardp) and cycleway_left and cycleway_tags[cycleway_left]) or way_is_part_of_cycle_route(way,forwardp)
 end
 
+-- simple speed (scaling) function depending on gradient
+-- input: gradient
+-- output: speed
+function foot_gradient_speed(g)
+   if g>0 then
+      return math.max(1/4.2,1-3*g)
+   else
+      return math.max(1/4.2,1+1.4*g)
+   end
+end
