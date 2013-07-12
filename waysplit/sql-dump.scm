@@ -75,7 +75,11 @@
                   (append-map!
                    (lambda(p)
                      (list #`",|p|_costs_fwd double precision"
-                           #`",|p|_costs_bwd double precision"))
+                           #`",|p|_costs_bwd double precision"
+                           ;; todo: maybe remove again
+                           #`",|p|_speed_fwd double precision"
+                           #`",|p|_speed_bwd double precision"
+                           ))
                    *profiles*)
                   (list "constraint enforce_dims_wkb_geometry check ((st_ndims(wkb_geometry) = 2))"
                         "constraint enforce_geotype_wkb_geometry check ((geometrytype(wkb_geometry) = 'LINESTRING'::text))"
@@ -86,7 +90,9 @@
          (string-join (append-map!
                        (lambda(p)
                          (list #`",|p|_costs_fwd"
-                               #`",|p|_costs_bwd"))
+                               #`",|p|_costs_bwd"
+                               #`",|p|_speed_fwd"
+                               #`",|p|_speed_bwd"))
                        *profiles*)
                       ",")
          ") VALUES ")
@@ -117,10 +123,12 @@
                     "',"
                     (intersperse ","
                                  (append-map! (lambda(profile)
-                                                ;; todo: maybe use 'Infinity'::double precision instead of 0
-                                                ;; but then fix the lua code first! (it already returns 0)
+                                                ;; note: cost is a misnomer (costs really are: distance/cost)
                                                 (list (ref tags #`"osrm:,|profile|:fwd:cost" "0")
-                                                      (ref tags #`"osrm:,|profile|:bwd:cost" "0")))
+                                                      (ref tags #`"osrm:,|profile|:bwd:cost" "0")
+                                                      (ref tags #`"osrm:,|profile|:fwd:speed" "0")
+                                                      (ref tags #`"osrm:,|profile|:bwd:speed" "0")
+                                                      ))
                                               *profiles*))
                     ")"))))])))
   (print ";")
