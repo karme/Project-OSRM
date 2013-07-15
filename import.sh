@@ -111,6 +111,6 @@ for P in $PROFILES; do
     mkdir -p ${OUTDIR}/$P
     cp -vl ${OUTDIR}/$X.osm.pbf ${OUTDIR}/$P/$X.osm.pbf
     timed ./build/osrm-extract ${OUTDIR}/$P/$X.osm.pbf $PROFILE
-    time ./build/osrm-prepare ${OUTDIR}/$P/$X.osrm ${OUTDIR}/$P/$X.osrm.restrictions $PROFILE
+    timed ./build/osrm-prepare ${OUTDIR}/$P/$X.osrm ${OUTDIR}/$P/$X.osrm.restrictions $PROFILE
     rm -v ${OUTDIR}/$P/$X.osm.pbf
 done
