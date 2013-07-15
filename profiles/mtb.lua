@@ -211,7 +211,8 @@ function mtb_way_penalty(way, elevation_profile, forwardp)
    return math.max(penalty,
                    waytype_penalties[way.tags:Find("alpstein:waytype")] or 2,
                    (forwardp and way.forward.mode == mode_pushing and 3)
-                      or ((not forwardp) and way.backward.mode == mode_pushing) and 3)
+                      or ((not forwardp) and way.backward.mode == mode_pushing and 3)
+                      or 1)
 end
 
 function way_function (way)
