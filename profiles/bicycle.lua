@@ -203,7 +203,11 @@ function bicycle_way_penalty(way, elevation_profile, forwardp)
       if forwardp then speed=way.forward.speed else speed=way.backward.speed end
       penalty = math.max(speed / (len/5), 2)
    end
-   return math.max(penalty, waytype_penalties[way.tags:Find("alpstein:waytype")] or 2)
+   return math.max(penalty,
+                   waytype_penalties[way.tags:Find("alpstein:waytype")] or 2,
+                   (forwardp and way.forward.mode == mode_pushing and 3)
+                      or ((not forwardp) and way.backward.mode == mode_pushing and 3)
+                      or 1)
 end
 
 function way_function (way)
